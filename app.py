@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import numpy as np
 
-import additional_demos.Parameter_optimis as Parameter
+import Parameter
 from demo_composite_flow_robot import demo_composite_flow
 
 
