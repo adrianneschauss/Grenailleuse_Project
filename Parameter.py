@@ -61,18 +61,10 @@ t_dis2 = 10
 #one bottle needing to be aligned horizontally is equivalent to 926 cm 
 #the entire line in either case is equivalent to 5802 cm 
 
-#Horizontal conveyor Additional parameters
-length_first = 151.4
-#1514
-length_second = 390.0
-#3900
-#3900
+
 vertical_spacing = 30
 #300
-horizontal_spacing= 92.6
-#926
-first_speed = 15
-second_speed = 15
+
  #the total length is 4876 but since we need an additional 926 as a sink this is actually only 4876-926
 
 #50 pas minute a 50 hertz 

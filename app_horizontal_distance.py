@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import numpy as np
 
-import Parameter_with_distance as Parameter
+import Parameter_horizontal as Parameter
 from demo_composite_horizontal import demo_composite_flow
 
 
