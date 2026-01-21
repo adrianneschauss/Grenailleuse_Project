@@ -3,7 +3,7 @@ import numpy as np
 import simpy
 import matplotlib.pyplot as plt
 from simpy_objects import Conveyor
-import Parameter_with_distance
+import Parameter_horizontal
 from demo_composite_flow_robot import arrival_process, create_step_conveyor, load_step_conveyor, step_conveyor_advance, continuous_conveyor, inspector_process, unload_delay
 
 def demo_composite_flow(
@@ -36,45 +36,45 @@ def demo_composite_flow(
     env = simpy.Environment()
 
     if mean_interval is None:
-        mean_interval = Parameter_with_distance.mean_interval
+        mean_interval = Parameter_horizontal.mean_interval
     if down_time is None:
-        down_time = Parameter_with_distance.down_time
+        down_time = Parameter_horizontal.down_time
     if min_inter is None:
-        min_inter = Parameter_with_distance.min_iter
+        min_inter = Parameter_horizontal.min_iter
     if max_inter is None:
-        max_inter = Parameter_with_distance.max_iter
+        max_inter = Parameter_horizontal.max_iter
     if t_dis is None:
-        t_dis = Parameter_with_distance.t_dis
+        t_dis = Parameter_horizontal.t_dis
     if t_dis2 is None:
-        t_dis2 = Parameter_with_distance.t_dis2
+        t_dis2 = Parameter_horizontal.t_dis2
     if inspect_min is None:
-        inspect_min = Parameter_with_distance.inspect_min
+        inspect_min = Parameter_horizontal.inspect_min
     if inspect_max is None:
-        inspect_max = Parameter_with_distance.inspect_max
+        inspect_max = Parameter_horizontal.inspect_max
     if step_time is None:
-        step_time = Parameter_with_distance.step_time
+        step_time = Parameter_horizontal.step_time
     if steps is None:
-        steps = Parameter_with_distance.steps
+        steps = Parameter_horizontal.steps
     if gr_conv is None:
-        gr_conv = Parameter_with_distance.gr_conv
+        gr_conv = Parameter_horizontal.gr_conv
     if cont_out_capacity is None:
         cont_out_capacity = 1
     if length_first is None:
-        length_first = Parameter_with_distance.length_first
+        length_first = Parameter_horizontal.length_first
     if length_second is None:
-        length_second = Parameter_with_distance.length_second
+        length_second = Parameter_horizontal.length_second
     if horizontal_spacing is None:
-        horizontal_spacing = Parameter_with_distance.horizontal_spacing
+        horizontal_spacing = Parameter_horizontal.horizontal_spacing
     if vertical_spacing is None:
-        vertical_spacing = Parameter_with_distance.vertical_spacing
+        vertical_spacing = Parameter_horizontal.vertical_spacing
     if first_speed is None:
-        first_speed = Parameter_with_distance.first_speed
+        first_speed = Parameter_horizontal.first_speed
     if second_speed is None:
-        second_speed = Parameter_with_distance.second_speed
+        second_speed = Parameter_horizontal.second_speed
     if dt is None:
-        dt = Parameter_with_distance.dt
+        dt = Parameter_horizontal.dt
     if env_time is None:
-        env_time = Parameter_with_distance.env_time
+        env_time = Parameter_horizontal.env_time
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
