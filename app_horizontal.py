@@ -12,7 +12,7 @@ def to_float(value):
     return float(value)
 
 
-st.set_page_config(page_title="Simulateur grenailleuse horizontal", layout="wide")
+st.set_page_config(page_title="Simulateur Grenailleuse avec Bouteilles en Horizontale", layout="wide")
 st.title("Simulateur de grenailleuse - Ligne horizontale")
 
 st.sidebar.header("Arrivée")
