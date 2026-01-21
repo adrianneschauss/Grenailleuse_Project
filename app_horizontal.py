@@ -12,8 +12,8 @@ def to_float(value):
     return float(value)
 
 
-st.set_page_config(page_title="Simulateur Grenailleuse avec Bouteilles en Horizontale", layout="wide")
-st.title("Simulateur Grenailleuse avec Bouteilles en Horizontale")
+st.set_page_config(page_title="Simulateur de Grenailleuse avec Bouteilles en Horizontale", layout="wide")
+st.title("Simulateur de Grenailleuse avec Bouteilles en Horizontale")
 
 st.sidebar.header("Arrivée")
 mean_interval = st.sidebar.number_input(
