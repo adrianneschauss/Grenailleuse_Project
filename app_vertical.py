@@ -6,7 +6,7 @@ import Parameter
 from demo_composite_flow_robot import demo_composite_flow
 
 
-st.set_page_config(page_title="Simulateur de Grenailleuse en Verticale (avec Robot)", layout="wide")
+st.set_page_config(page_title="Simulateur de Grenailleuse avec Bouteilles en Verticale (avec Robot)", layout="wide")
 st.title("Simulateur de Grenailleuse en Verticale (avec Robot)")
 
 st.sidebar.header("Arrivée")
