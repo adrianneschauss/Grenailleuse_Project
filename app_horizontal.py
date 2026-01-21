@@ -47,6 +47,9 @@ length_first = st.sidebar.number_input(
 length_second = st.sidebar.number_input(
     "Longueur convoyeur 2 (cm)", min_value=0.1, value=to_float(Parameter.length_second), step=0.1
 )
+vertical_spacing = st.sidebar.number_input(
+    "Espacement vertical (cm)", min_value=0.1, value=to_float(Parameter.vertical_spacing), step=0.1
+)
 horizontal_spacing = st.sidebar.number_input(
     "Espacement horizontal (cm)", min_value=0.1, value=to_float(Parameter.horizontal_spacing), step=0.1
 )
@@ -103,6 +106,7 @@ result = demo_composite_flow(
     length_second=length_second,
     spacing=horizontal_spacing,
     horizontal_spacing=horizontal_spacing,
+    vertical_spacing=vertical_spacing,
     speed=second_speed,
     first_speed=first_speed,
     second_speed=second_speed,
