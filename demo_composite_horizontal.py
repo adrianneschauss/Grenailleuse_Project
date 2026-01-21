@@ -4,7 +4,7 @@ import simpy
 import matplotlib.pyplot as plt
 from simpy_objects import Conveyor
 import Parameter_horizontal
-from demo_composite_flow_robot import arrival_process, create_step_conveyor, load_step_conveyor, step_conveyor_advance, continuous_conveyor, inspector_process, unload_delay
+from demo_composite_flow_robot import arrival_process, create_step_conveyor, load_step_conveyor, step_conveyor_advance, continuous_conveyor_simple, inspector_process, unload_delay
 
 def demo_composite_flow(
     mean_interval=None,
@@ -104,8 +104,8 @@ def demo_composite_flow(
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times)) 
     #conveyor 1   
     cont_out_1 = simpy.Store(env, capacity = 1)
-    env.process(continuous_conveyor(
-                env, 
+    env.process(continuous_conveyor_simple(
+                env,
                 length = length_first,
                 speed = first_speed, 
                 dt = dt,
@@ -119,7 +119,7 @@ def demo_composite_flow(
     cont_out_2 = simpy.Store(env, capacity = 1)
     #conveyor 2
     env.process(
-        continuous_conveyor(
+        continuous_conveyor_simple(
             env,
             length=length_second,
             speed=second_speed,

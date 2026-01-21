@@ -99,16 +99,31 @@ def continuous_conveyor(env, length, speed, dt, input_store, spacing, out_store,
         if input_store.items and (not items or items[0]["pos"] >= spacing):
             item = yield input_store.get()
             items.append({"id": item, "pos": 0.0})
-        for item in items:
-            item["pos"] += speed * dt
-        pos_list = [float(np.round(item["pos"],2)) for item in items]
+        output_full = out_store.capacity is not None and len(out_store.items) >= out_store.capacity
+        gap = 0.0 if output_full else spacing
+        if items:
+            items[0]["pos"] = items[0]["pos"] + speed * dt
+            if output_full:
+                items[0]["pos"] = min(items[0]["pos"], length)
+            for i in range(1, len(items)):
+                max_pos = items[i - 1]["pos"] - gap
+                items[i]["pos"] = min(items[i]["pos"] + speed * dt, max_pos)
+        pos_list = [float(np.round(item["pos"], 2)) for item in items]
         print(pos_list)
-        exited = [item for item in items if item["pos"] >= length]
-        items = [item for item in items if item["pos"] < length]
-        for item in exited:
-            yield out_store.put(item)
-            if exit_times is not None:
-                exit_times.append(env.now)
+        remaining = []
+        for item in items:
+            if item["pos"] >= length:
+                output_full = out_store.capacity is not None and len(out_store.items) >= out_store.capacity
+                if output_full:
+                    item["pos"] = length
+                    remaining.append(item)
+                    continue
+                yield out_store.put(item)
+                if exit_times is not None:
+                    exit_times.append(env.now)
+            else:
+                remaining.append(item)
+        items = remaining
 
         yield env.timeout(dt)
 

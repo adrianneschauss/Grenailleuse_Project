@@ -68,3 +68,5 @@ vertical_spacing = 30
  #the total length is 4876 but since we need an additional 926 as a sink this is actually only 4876-926
 
 #50 pas minute a 50 hertz 
+#if one pas is is equiablent to 73 cm then 
+#50* 73/ 60 is the speed per second = 60 cm/second (which seems relatively high)
