@@ -1,8 +1,4 @@
-random
-numpy 
+streamlit
+numpy
 simpy
 matplotlib
-functools
-argparse
-csv
-pathlib
