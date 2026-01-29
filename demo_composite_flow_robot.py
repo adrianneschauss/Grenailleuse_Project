@@ -125,7 +125,110 @@ def continuous_conveyor_simple(
                 exit_times.append(env.now)
 
         if position_logger is not None:
-            position_logger(env.now, segment_id, items, segment_length=segment_length)
+            try:
+                position_logger(
+                    env.now,
+                    segment_id,
+                    items,
+                    segment_length=segment_length,
+                    step_mode=step_mode,
+                    det1=det1,
+                    det2=det2,
+                    det3=det3,
+                    det4=det4,
+                )
+            except TypeError:
+                position_logger(env.now, segment_id, items, segment_length=segment_length)
+
+        yield env.timeout(dt)
+
+
+def variable_conveyor(
+    env,
+    length,
+    speed,
+    dt,
+    input_store,
+    spacing,
+    out_store,
+    inspect_buffer,
+    inspector,
+    discharge_time=0.0,
+    exit_times=None,
+    position_logger=None,
+    segment_id=None,
+    segment_length=None,
+    mode_switch_delay=0.0,
+):
+    items = []
+    step_interval = spacing / speed if speed > 0 else dt
+    step_acc = 0.0
+    last_mode = None
+    det3_state = 0
+    last_mode_change_time = 0.0
+
+    while True:
+        det4 = 1 if len(input_store.items) > 0 else 0
+        det2 = 1 if len(inspect_buffer.items) > 0 else 0
+        det1 = 1 if inspector.count > 0 else 0
+
+        desired_step_mode = (det2 == 1 or det3_state == 1 or det1 == 1)
+        step_mode = desired_step_mode
+        if last_mode is True and desired_step_mode is False:
+            if env.now - last_mode_change_time < mode_switch_delay:
+                step_mode = True
+        if last_mode is None or last_mode != step_mode:
+            step_acc = 0.0
+            last_mode = step_mode
+            last_mode_change_time = env.now
+            print("we are in step mode")
+
+        if input_store.items and (not items or items[0]["pos"] >= spacing):
+            item = yield input_store.get()
+            if discharge_time > 0:
+                yield env.timeout(discharge_time)
+            items.append({"id": item, "pos": 0.0})
+
+        if step_mode:
+            step_acc += dt
+            if step_acc >= step_interval:
+                step_acc -= step_interval
+                for item in items:
+                    item["pos"] += spacing
+                    if item["pos"] > length:
+                        item["pos"] = length
+        else:
+            for item in items:
+                item["pos"] += speed * dt
+
+        end_sensor = 1 if any(item["pos"] >= length - 1e-6 for item in items) else 0
+        det3_state = end_sensor
+        pos_list = [float(np.round(item["pos"], 2)) for item in items]
+        print(pos_list, {"det1": det1, "det2": det2, "det3": end_sensor, "det4": det4})
+
+        exited = [item for item in items if item["pos"] >= length]
+        items = [item for item in items if item["pos"] < length]
+        for item in exited:
+            yield out_store.put(item)
+            yield env.timeout(30)
+            if exit_times is not None:
+                exit_times.append(env.now)
+
+        if position_logger is not None:
+            try:
+                position_logger(
+                    env.now,
+                    segment_id,
+                    items,
+                    segment_length=segment_length,
+                    step_mode=step_mode,
+                    det1=det1,
+                    det2=det2,
+                    det3=end_sensor,
+                    det4=det4,
+                )
+            except TypeError:
+                position_logger(env.now, segment_id, items, segment_length=segment_length)
 
         yield env.timeout(dt)
 

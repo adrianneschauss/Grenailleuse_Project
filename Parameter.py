@@ -38,7 +38,7 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 # Variable n° ? : Nombre de bouteille dans le buffer
 length = 457.6
 spacing = 30
-speed = 18
+speed = 12
 dt = 1
 #capacity = 10
 #speed = 9 meters per minute (as i was told)
@@ -53,8 +53,8 @@ inspect_max = 15
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
 #!!question: should this part be seperated into two? is there a gain there?
-t_dis = 10
-t_dis2 = 10
+t_dis = 3
+t_dis2 = 3
 #320/ hour 
 # 9 meters per minute (max: 16 metre per minute)
 #One bottle in vertical: is 300 cm in diameter 

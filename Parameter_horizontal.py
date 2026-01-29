@@ -52,6 +52,8 @@ inspect_max = 15
 #!!question: should this part be seperated into two? is there a gain there?
 t_dis = 3
 t_dis2 = 3
+#Hold time at det2 before inspector (seconds), coneyor that moves to inspector 
+hold_at_det2 = 10
 #320/ hour 
 # 9 meters per minute (max: 16 metre per minute)
 #One bottle in vertical: is 300 cm in diameter 
@@ -61,15 +63,18 @@ t_dis2 = 3
 #Horizontal conveyor Additional parameters
 length_first = 151.4
 #1514
-length_second = 402
+length_second = 457.6
 #3900
 vertical_spacing = 30
 #300
 horizontal_spacing= 85
 #926
-first_speed = 18
-second_speed = 18
+first_speed = 12
+second_speed = 12
 dt = 1
  #the total length is 4876 but since we need an additional 926 as a sink this is actually only 4876-850
 
 #50 pas minute a 50 hertz 
+
+#Mode switch hysteresis (seconds) to prevent rapid toggling
+mode_switch_delay = 10

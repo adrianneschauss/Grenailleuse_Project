@@ -79,11 +79,15 @@ def demo_composite_flow(
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
     p_buffer = Conveyor(env, "P_buffer", conveyor_speed=1, init_load=0, max_load=10)
+#____
+# first step conveyor (grenailleuse)
     step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
+
     grenailleuse_exit_times = []
     first_conv_exit_times = []
     second_conv_exit_times = [] 
     inspector = simpy.Resource(env, capacity=1)
+
     def inspect_time():
         return random.uniform(inspect_min, inspect_max)
 

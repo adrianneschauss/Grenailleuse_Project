@@ -225,3 +225,18 @@ ax_left.grid(True, color="#444444", alpha=0.6)
 handles1, labels1 = ax_left.get_legend_handles_labels()
 ax_left.legend(handles1, labels1, loc="center left", bbox_to_anchor=(1.02, 0.5))
 st.pyplot(fig2)
+
+st.subheader("Retard entre arrivées")
+arrival_times = result["arrival_times"]
+if len(arrival_times) > 1:
+    arrival_times_sorted = sorted(arrival_times)
+    deltas = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
+    delays = [max(0.0, d - mean_interval) for d in deltas]
+    fig3, ax3 = plt.subplots()
+    ax3.plot(arrival_times_sorted[1:], delays, marker="o", linestyle="-")
+    ax3.set_xlabel("Temps")
+    ax3.set_ylabel("Retard vs intervalle moyen (s)")
+    ax3.set_title("Retard d'arrivée des bouteilles")
+    st.pyplot(fig3)
+else:
+    st.info("Pas assez d'arrivées pour calculer les retards.")
