@@ -8,7 +8,7 @@ env_time = 3600/3
 #(par exemple 5% de 16h)
 down_time = 0.05
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
-mean_interval = 10
+mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
 min_iter = 10
 #Variable n°4 : Temps maximum de l’interruption chargement (par exemple 30 secondes)

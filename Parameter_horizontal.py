@@ -6,13 +6,13 @@ env_time = 3600/3
 #Bottle Arrival
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
-down_time = 0.1
+down_time = 0.05
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
 min_iter = 10
 #Variable n°4 : Temps maximum de l’interruption chargement (par exemple 30 secondes)
-max_iter = 40
+max_iter = 30
 
 # WE KNOW: T = m (with prob = 1-p ) and T = M +U (with prob p)
 # E[T] = (1-p)*m + p*(m + E[U]) =  m + p E[U]
@@ -44,7 +44,8 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 20
+inspect_max = 12
+
 
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
@@ -53,8 +54,7 @@ inspect_max = 20
 t_dis = 3
 t_dis2 = 3
 #Hold time at det2 before inspector (seconds), coneyor that moves to inspector 
-hold_at_det2 = 10
-det_hold_time = 3
+det_hold_time = 10
 #320/ hour 
 # 9 meters per minute (max: 16 metre per minute)
 #One bottle in vertical: is 300 cm in diameter 
@@ -70,8 +70,8 @@ vertical_spacing = 30
 #300
 horizontal_spacing= 85
 #926
-first_speed = 5
-second_speed = 8
+first_speed = 8
+second_speed = 12
 dt = 1
  #the total length is 4876 but since we need an additional 926 as a sink this is actually only 4876-850
 

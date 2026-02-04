@@ -107,7 +107,12 @@ def demo_composite_flow(
     inspector = simpy.Resource(env, capacity=1)
 
     def inspect_time():
-        return random.uniform(inspect_min, inspect_max)
+        p = random.random()
+        if p> 0.05:
+            x= random.uniform(inspect_min, inspect_max)
+        else: 
+            x = random.uniform(30, 70)
+        return x
 
     arrival_times = []
     env.process(
@@ -192,7 +197,7 @@ def demo_composite_flow(
         step_time=8,
     ):
         items = []
-        max_items = int(length // spacing) + 1
+        max_items = int(length // spacing)
         if step_time is None:
             step_interval = spacing / speed if speed > 0 else dt
         else:
@@ -252,10 +257,12 @@ def demo_composite_flow(
                             if item["pos"] > length:
                                 item["pos"] = length
             else:
-                for item in items:
-                    item["pos"] += speed * dt
-                    if item["pos"] > length:
-                        item["pos"] = length
+                # In continuous mode, stop the entire conveyor if an item is at the end.
+                if not any(item["pos"] >= length - 1e-6 for item in items):
+                    for item in items:
+                        item["pos"] += speed * dt
+                        if item["pos"] > length:
+                            item["pos"] = length
             det3_state = 0
             for item in items:
                 if item["pos"] >= length - 1e-6:
@@ -348,7 +355,7 @@ def demo_composite_flow(
         exit_times=None,
     ):
         items = []
-        max_items = int(length // spacing) + 1
+        max_items = int(length // spacing)
         cont_items_state["items"] = items
         while True:
             if (not items or items[0]["pos"] >= spacing) and len(items) < max_items:
