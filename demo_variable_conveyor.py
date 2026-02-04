@@ -3,9 +3,15 @@ import numpy as np
 import simpy
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from simpy_objects import Conveyor
 import Parameter_horizontal
-from demo_composite_flow_robot import arrival_process, create_step_conveyor, load_step_conveyor, step_conveyor_advance, variable_conveyor, inspector_process, unload_delay
+from demo_composite_flow_robot import (
+    arrival_process,
+    create_step_conveyor,
+    load_step_conveyor,
+    step_conveyor_advance,
+    inspector_process,
+    unload_delay,
+)
 
 def demo_composite_flow(
     mean_interval=None,
@@ -37,6 +43,8 @@ def demo_composite_flow(
     animation_interval_ms=50,
     hold_at_det2=None,
     mode_switch_delay=1.0,
+    p_buffer_capacity=None,
+    det_hold_time = None
 ):
     env = simpy.Environment()
 
@@ -80,10 +88,16 @@ def demo_composite_flow(
         dt = Parameter_horizontal.dt
     if env_time is None:
         env_time = Parameter_horizontal.env_time
+    if det_hold_time is None:
+        det_hold_time = Parameter_horizontal.det_hold_time
+    
+    
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
-    p_buffer = Conveyor(env, "P_buffer", conveyor_speed=1, init_load=0, max_load=10)
+    if p_buffer_capacity is None:
+        p_buffer_capacity = 1
+    p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
 #____
 # first step conveyor (grenailleuse)
     step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
@@ -100,6 +114,7 @@ def demo_composite_flow(
         arrival_process(
             env,
             p_buffer,
+            step_g,
             mean_interval,
             down_time,
             min_inter,
@@ -109,20 +124,25 @@ def demo_composite_flow(
     )
 
     env.process(load_step_conveyor(env, p_buffer, step_g))
-    env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times)) 
-    #conveyor 1   
-    inspect_buffer = simpy.Store(env, capacity=1)
-    inspect_ready = simpy.Store(env, capacity=1)
-    cont_out = simpy.Store(env, capacity=1)
+    grenailleuse_blocked_time = [0.0]
+    env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time)) 
+    # downstream chain: variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector
+    det1_hold = simpy.Store(env, capacity=1)
+    cont_items_state = {"items": []}
     position_log = {
         "t": [],
         "positions": [],
+        "cont_positions": [],
         "inspect_count": [],
         "step_mode": [],
         "det1": [],
         "det2": [],
         "det3": [],
         "det4": [],
+    }
+    step_position_log = {
+        "t": [],
+        "slots": [],
     }
 
     def position_logger(
@@ -138,57 +158,266 @@ def demo_composite_flow(
     ):
         position_log["t"].append(now)
         position_log["positions"].append([item["pos"] for item in items])
-        position_log["inspect_count"].append(len(inspect_buffer.items))
+        position_log["cont_positions"].append(
+            [item["pos"] for item in cont_items_state["items"]]
+        )
+        position_log["inspect_count"].append(len(det1_hold.items))
         position_log["step_mode"].append(step_mode)
         position_log["det1"].append(det1)
         position_log["det2"].append(det2)
         position_log["det3"].append(det3)
         position_log["det4"].append(det4)
 
+    
+    cont_out_length = 1 * horizontal_spacing
+
+    def detector_active(hold_store, now, hold_time):
+        if not hold_store.items:
+            return 0
+        started = hold_store.items[0].get("hold_start", now)
+        return 1 if now - started >= hold_time else 0
+
+    def variable_conveyor_segment(
+        env,
+        length,
+        speed,
+        dt,
+        input_store,
+        spacing,
+        state_ref,
+        position_logger=None,
+        segment_id=None,
+        segment_length=None,
+        mode_switch_delay=0.0,
+        step_time=8,
+    ):
+        items = []
+        max_items = int(length // spacing) + 1
+        if step_time is None:
+            step_interval = spacing / speed if speed > 0 else dt
+        else:
+            step_interval = step_time
+        step_acc = 0.0
+        last_mode = None
+        last_mode_change_time = 0.0
+        det12_start = None
+        det3_state = 0
+        det4_state = 0
+        while True:
+            det2 = cont_end_state["active"]
+            det1 = detector_active(det1_hold, env.now, det_hold_time)
+
+            if det1 == 1 and det2 == 1:
+                if det12_start is None:
+                    det12_start = env.now
+            else:
+                det12_start = None
+
+            if last_mode is None:
+                last_mode = False
+                last_mode_change_time = env.now
+
+            step_mode = last_mode
+            if not step_mode and det12_start is not None and env.now - det12_start >= det_hold_time:
+                step_mode = True
+            if step_mode:
+                if (det1 == 1 and det2 == 0 and det3_state == 0 and det4_state == 0) or (
+                    det1 == 0 and det2 == 0 and det3_state == 0 and det4_state == 0
+                ):
+                    step_mode = False
+
+            if last_mode != step_mode:
+                step_acc = 0.0
+                last_mode = step_mode
+                last_mode_change_time = env.now
+
+            if (
+                input_store.items
+                and (not items or items[0]["pos"] >= spacing)
+                and len(items) < max_items
+            ):
+                item = yield input_store.get()
+                items.append(
+                    {"payload": item, "pos": 0.0, "entry_start": env.now}
+                )
+            if step_mode:
+                step_acc += dt
+                if step_acc >= step_interval:
+                    step_acc -= step_interval
+                    # If the end is blocked (items already at the end),
+                    # hold position to avoid compressing past spacing.
+                    if not any(item["pos"] >= length - 1e-6 for item in items):
+                        for item in items:
+                            item["pos"] += spacing
+                            if item["pos"] > length:
+                                item["pos"] = length
+            else:
+                for item in items:
+                    item["pos"] += speed * dt
+                    if item["pos"] > length:
+                        item["pos"] = length
+            det3_state = 0
+            for item in items:
+                if item["pos"] >= length - 1e-6:
+                    if "end_start" not in item:
+                        item["end_start"] = env.now
+                    if env.now - item["end_start"] >= det_hold_time:
+                        det3_state = 1
+                        break
+                else:
+                    item.pop("end_start", None)
+            det4_state = 0
+            for item in items:
+                if item["pos"] <= spacing:
+                    if env.now - item["entry_start"] >= det_hold_time:
+                        det4_state = 1
+                        break
+            state_ref["items"] = items
+
+            if position_logger is not None:
+                position_logger(
+                    env.now,
+                    segment_id,
+                    items,
+                    segment_length=segment_length,
+                    step_mode=step_mode,
+                    det1=det1,
+                    det2=det2,
+                    det3=det3_state,
+                    det4=det4_state,
+                )
+            yield env.timeout(dt)
+
+    def continuous_conveyor_segment(
+        env,
+        length,
+        speed,
+        dt,
+        input_store,
+        spacing,
+        end_store,
+        end_hold_time,
+        exit_times=None,
+    ):
+        items = []
+        while True:
+            if input_store.items and (not items or items[0]["pos"] >= spacing):
+                item = yield input_store.get()
+                items.append({"payload": item, "pos": 0.0, "end_start": None})
+            for item in items:
+                item["pos"] += speed * dt
+            remaining = []
+            for item in items:
+                if item["pos"] >= length:
+                    if item["end_start"] is None:
+                        item["end_start"] = env.now
+                    if len(end_store.items) < end_store.capacity:
+                        yield end_store.put(item["payload"])
+                        if exit_times is not None:
+                            exit_times.append(env.now)
+                    else:
+                        remaining.append(item)
+                else:
+                    remaining.append(item)
+            items = remaining
+            yield env.timeout(dt)
+
+    cont_end_state = {"active": 0}
+    var_items_state = {"items": []}
+
+    def cont_end_detector():
+        while True:
+            cont_end_state["active"] = 0
+            for item in cont_items_state["items"]:
+                if item["pos"] >= cont_out_length and item["end_start"] is not None:
+                    if env.now - item["end_start"] >= det_hold_time:
+                        cont_end_state["active"] = 1
+                        break
+            yield env.timeout(dt)
+
+    def continuous_conveyor_segment_with_state(
+        env,
+        length,
+        speed,
+        dt,
+        source_state,
+        spacing,
+        end_store,
+        end_hold_time,
+        arrival_log=None,
+        exit_times=None,
+    ):
+        items = []
+        max_items = int(length // spacing) + 1
+        cont_items_state["items"] = items
+        while True:
+            if (not items or items[0]["pos"] >= spacing) and len(items) < max_items:
+                src_items = source_state["items"]
+                for i, src in enumerate(src_items):
+                    if src["pos"] >= length_second - 1e-6:
+                        src_items.pop(i)
+                        items.append({"payload": src["payload"], "pos": 0.0, "end_start": None})
+                        break
+            for item in items:
+                item["pos"] += speed * dt
+            remaining = []
+            for item in items:
+                if item["pos"] >= length:
+                    if item["end_start"] is None:
+                        item["end_start"] = env.now
+                    if len(end_store.items) < end_store.capacity:
+                        payload = item["payload"]
+                        if not isinstance(payload, dict) or "id" not in payload:
+                            payload = {"id": payload}
+                        payload["hold_start"] = env.now
+                        yield end_store.put(payload)
+                        if arrival_log is not None:
+                            arrival_log.append(env.now)
+                        if exit_times is not None:
+                            exit_times.append(env.now)
+                    else:
+                        remaining.append(item)
+                else:
+                    remaining.append(item)
+            items = remaining
+            cont_items_state["items"] = items
+            yield env.timeout(dt)
+
+    inspector_arrival_times = []
     env.process(
-        variable_conveyor(
+        variable_conveyor_segment(
             env,
             length=length_second,
-            speed=second_speed,
+            speed=first_speed,
             dt=dt,
             input_store=step_g["output_store"],
             spacing=horizontal_spacing,
-            out_store=cont_out,
-            inspect_buffer=inspect_buffer,
-            inspector=inspector,
-            discharge_time=gr_conv,
-            exit_times=second_conv_exit_times,
+            state_ref=var_items_state,
             position_logger=position_logger,
             segment_id="variable",
             segment_length=length_second,
             mode_switch_delay=mode_switch_delay,
+            step_time=step_time,
         )
     )
+    env.process(
+        continuous_conveyor_segment_with_state(
+            env,
+            length=cont_out_length,
+            speed=second_speed,
+            dt=dt,
+            source_state=var_items_state,
+            spacing=horizontal_spacing,
+            end_store=det1_hold,
+            end_hold_time=det_hold_time,
+            arrival_log=inspector_arrival_times,
+            exit_times=second_conv_exit_times,
+        )
+    )
+    env.process(cont_end_detector())
     post_inspect = simpy.Store(env)
 
-    if hold_at_det2 is None:
-        hold_at_det2 = Parameter_horizontal.hold_at_det2
-    post_inspect_delay = t_dis
-    inspector_arrival_times = []
-    def mark_and_hold_to_ready(env, input_store, hold_store, ready_store, hold_time, arrival_log):
-        # Move into det2 immediately, then keep it there until hold_time elapses.
-        while True:
-            item = yield input_store.get()
-            item["ready_time"] = env.now + hold_time
-            yield hold_store.put(item)
-
-            while True:
-                if hold_store.items and hold_store.items[0] is item:
-                    wait = max(0.0, item["ready_time"] - env.now)
-                    if wait > 0:
-                        yield env.timeout(wait)
-                    got = yield hold_store.get()
-                    yield ready_store.put(got)
-                    arrival_log.append(env.now)
-                    break
-                yield env.timeout(0.01)
-
-    env.process(mark_and_hold_to_ready(env, cont_out, inspect_buffer, inspect_ready, hold_at_det2, inspector_arrival_times))
+    post_inspect_delay = 0.0
 
     inspected_times = []
     busy_time = [0.0]
@@ -196,7 +425,7 @@ def demo_composite_flow(
         inspector_process(
             env,
             inspector,
-            inspect_ready,
+            det1_hold,
             inspect_time,
             inspected_times,
             busy_time,
@@ -216,17 +445,39 @@ def demo_composite_flow(
     def monitor_process():
         while True:
             monitor["t"].append(env.now)
-            monitor["cont_out"].append(len(cont_out.items))
-            monitor["inspect_buffer"].append(len(inspect_buffer.items))
+            monitor["cont_out"].append(len(cont_items_state["items"]))
+            monitor["inspect_buffer"].append(len(det1_hold.items))
             monitor["post_inspect"].append(len(post_inspect.items))
             monitor["inspector_busy"].append(inspector.count)
             yield env.timeout(sample_time)
 
     env.process(monitor_process())
+    def step_position_monitor():
+        while True:
+            step_position_log["t"].append(env.now)
+            step_position_log["slots"].append(list(step_g["slots"]))
+            yield env.timeout(sample_time)
+
+    env.process(step_position_monitor())
 
     env.run(env_time)
     idle_time = busy_time[0]
     print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
+    if position_log["t"]:
+        step_time_total = 0.0
+        cont_time_total = 0.0
+        switches = 0
+        last_mode = position_log["step_mode"][0]
+        for i in range(1, len(position_log["t"])):
+            dt_sample = position_log["t"][i] - position_log["t"][i - 1]
+            if position_log["step_mode"][i - 1]:
+                step_time_total += dt_sample
+            else:
+                cont_time_total += dt_sample
+            if position_log["step_mode"][i] != last_mode:
+                switches += 1
+                last_mode = position_log["step_mode"][i]
+        print(f"Mode totals: STEP={step_time_total:.2f}s CONT={cont_time_total:.2f}s switches={switches}")
 
     if animate:
         if position_log["t"]:
@@ -238,43 +489,92 @@ def demo_composite_flow(
                     arrival_idx += 1
                 arrival_counts.append(arrival_idx)
 
-            fig, ax = plt.subplots(figsize=(8, 2.5))
-            ax.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
-            ax.set_ylim(-1, 1.5)
-            ax.set_yticks([])
-            ax.set_xlabel("Conveyor position")
-            ax.set_title("Variable Conveyor Bottle Movement")
+            show_step = bool(step_position_log["t"])
+            if show_step:
+                fig, (ax_step, ax_var, ax_cont) = plt.subplots(3, 1, figsize=(8, 7.0), sharex=False)
+            else:
+                fig, (ax_var, ax_cont) = plt.subplots(2, 1, figsize=(8, 4.8), sharex=False)
+                ax_step = None
 
-            ax.hlines(0, 0, length_second, color="black", linewidth=2)
-            ax.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
-            ax.vlines(length_second, -0.2, 0.2, color="tab:red", linewidth=2)
-            ax.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
-            ax.text(length_second, 0.35, "Inspector", ha="right", va="bottom", fontsize=9)
+            if show_step:
+                slot_count = steps
+                slot_size = 1.0
+                total_length = slot_count * slot_size
+                ax_step.set_xlim(-0.5, total_length + 0.5)
+                ax_step.set_ylim(-0.75, 0.75)
+                ax_step.set_yticks([])
+                ax_step.set_xlabel("Grenailleuse step conveyor")
 
-            scat = ax.scatter([], [], s=60, color="tab:blue")
-            inspect_text = ax.text(0.5, 1.05, "", transform=ax.transAxes, ha="center", fontsize=9)
+                for i in range(slot_count):
+                    rect = plt.Rectangle(
+                        (i * slot_size, -0.3),
+                        slot_size,
+                        0.6,
+                        fill=False,
+                        edgecolor="black",
+                        linewidth=1.5,
+                    )
+                    ax_step.add_patch(rect)
+                ax_step.vlines(0, -0.35, 0.35, color="tab:green", linewidth=2)
+                ax_step.vlines(total_length, -0.35, 0.35, color="tab:red", linewidth=2)
+                ax_step.text(0, 0.4, "Entry", ha="left", va="bottom", fontsize=9)
+                ax_step.text(total_length, 0.4, "Exit", ha="right", va="bottom", fontsize=9)
+            ax_var.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
+            ax_var.set_ylim(-1, 1.5)
+            ax_var.set_yticks([])
+            ax_var.set_xlabel("Variable conveyor position")
+            ax_var.set_title("Variable + Continuous Conveyor Bottle Movement")
+
+            ax_var.hlines(0, 0, length_second, color="black", linewidth=2)
+            ax_var.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+            ax_var.vlines(length_second, -0.2, 0.2, color="tab:red", linewidth=2)
+            ax_var.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
+            ax_var.text(length_second, 0.35, "Variable end", ha="right", va="bottom", fontsize=9)
+
+            ax_cont.set_xlim(-horizontal_spacing, cont_out_length + horizontal_spacing)
+            ax_cont.set_ylim(-1, 1.5)
+            ax_cont.set_yticks([])
+            ax_cont.set_xlabel("Continuous conveyor position")
+
+            ax_cont.hlines(0, 0, cont_out_length, color="black", linewidth=2)
+            ax_cont.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+            ax_cont.vlines(cont_out_length, -0.2, 0.2, color="tab:red", linewidth=2)
+            ax_cont.text(0, 0.35, "Continuous start", ha="left", va="bottom", fontsize=9)
+            ax_cont.text(cont_out_length, 0.35, "Det2 / Inspector input", ha="right", va="bottom", fontsize=9)
+
+            scat_var = ax_var.scatter([], [], s=60, color="tab:blue")
+            scat_cont = ax_cont.scatter([], [], s=60, color="tab:orange")
+            scat_step = ax_step.scatter([], [], s=80, color="tab:blue") if show_step else None
 
             def init():
-                scat.set_offsets(np.empty((0, 2)))
-                inspect_text.set_text("")
-                return scat, inspect_text
+                scat_var.set_offsets(np.empty((0, 2)))
+                scat_cont.set_offsets(np.empty((0, 2)))
+                if show_step:
+                    scat_step.set_offsets(np.empty((0, 2)))
+                return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
             def update(frame):
                 positions = position_log["positions"][frame]
                 offsets = np.column_stack((positions, np.zeros(len(positions)))) if positions else np.empty((0, 2))
-                scat.set_offsets(offsets)
-                mode = "STEP" if position_log["step_mode"][frame] else "CONT"
-                det1 = position_log["det1"][frame]
-                det2 = position_log["det2"][frame]
-                det3 = position_log["det3"][frame]
-                det4 = position_log["det4"][frame]
-                inspect_text.set_text(
-                    "Mode: "
-                    f"{mode} | det1:{det1} det2:{det2} det3:{det3} det4:{det4}"
-                    f" | Inspector queue: {position_log['inspect_count'][frame]}"
-                    f" | Arrived: {arrival_counts[frame]}"
+                scat_var.set_offsets(offsets)
+                cont_positions = position_log["cont_positions"][frame]
+                cont_offsets = (
+                    np.column_stack((cont_positions, np.zeros(len(cont_positions))))
+                    if cont_positions
+                    else np.empty((0, 2))
                 )
-                return scat, inspect_text
+                scat_cont.set_offsets(cont_offsets)
+                if show_step and step_position_log["t"]:
+                    step_idx = frame if frame < len(step_position_log["t"]) else len(step_position_log["t"]) - 1
+                    slots = step_position_log["slots"][step_idx]
+                    occupied = [i for i, v in enumerate(slots) if v is not None]
+                    step_offsets = (
+                        np.column_stack((np.array(occupied) * slot_size + slot_size * 0.5, np.zeros(len(occupied))))
+                        if occupied
+                        else np.empty((0, 2))
+                    )
+                    scat_step.set_offsets(step_offsets)
+                return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
             anim = animation.FuncAnimation(
                 fig,
@@ -297,13 +597,16 @@ def demo_composite_flow(
         plt.title("Output Bottles Over Time")
         plt.tight_layout()
         plt.show()
+        print 
 
     return {
         "inspected_times": inspected_times,
         "arrival_times": arrival_times,
         "grenailleuse_exit_times": grenailleuse_exit_times,
+        "grenailleuse_blocked_time": grenailleuse_blocked_time[0],
         "conveyor_exit_times": second_conv_exit_times,
         "position_log": position_log,
+        "step_position_log": step_position_log,
         "inspector_arrival_times": inspector_arrival_times,
         "monitor": monitor,
         "busy_time": busy_time[0],
@@ -311,4 +614,6 @@ def demo_composite_flow(
     }
 
 if __name__ == "__main__":
-    demo_composite_flow(animate=True, plot=False)
+    inst = demo_composite_flow(animate=True, plot=True)
+    print(rf'the blocked time is about {inst["grenailleuse_blocked_time"]}')
+    

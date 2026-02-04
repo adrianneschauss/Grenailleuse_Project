@@ -1,8 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import streamlit as st
 import streamlit.components.v1 as components
 import numpy as np
 from matplotlib import animation
+
+# Allow larger embedded animations in Streamlit.
+mpl.rcParams["animation.embed_limit"] = 60
 
 import Parameter_horizontal as Parameter
 from demo_variable_conveyor import demo_composite_flow
@@ -272,35 +276,75 @@ if show_animation:
     times = position_log.get("t", [])
     positions = position_log.get("positions", [])
     if times and positions:
-        inspector_arrivals = result.get("inspector_arrival_times", [])
-        arrivals_sorted = sorted(inspector_arrivals)
-        arrival_counts = []
-        arrival_idx = 0
-        for t in times:
-            while arrival_idx < len(arrivals_sorted) and arrivals_sorted[arrival_idx] <= t:
-                arrival_idx += 1
-            arrival_counts.append(arrival_idx)
+        cont_positions = position_log.get("cont_positions", [])
+        step_log = result.get("step_position_log", {})
 
-        fig_anim, ax_anim = plt.subplots(figsize=(8, 2.5))
-        ax_anim.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
-        ax_anim.set_ylim(-1, 1.5)
-        ax_anim.set_yticks([])
-        ax_anim.set_xlabel("Conveyor position")
-        ax_anim.set_title("Variable Conveyor Bottle Movement")
+        show_step = bool(step_log.get("t"))
+        cont_out_length = 1.5 * horizontal_spacing
 
-        ax_anim.hlines(0, 0, length_second, color="black", linewidth=2)
-        ax_anim.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
-        ax_anim.vlines(length_second, -0.2, 0.2, color="tab:red", linewidth=2)
-        ax_anim.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
-        ax_anim.text(length_second, 0.35, "Inspector", ha="right", va="bottom", fontsize=9)
+        if show_step:
+            fig_anim, (ax_step, ax_var, ax_cont) = plt.subplots(3, 1, figsize=(8, 7.0), sharex=False)
+        else:
+            fig_anim, (ax_var, ax_cont) = plt.subplots(2, 1, figsize=(8, 4.8), sharex=False)
+            ax_step = None
 
-        scat = ax_anim.scatter([], [], s=60, color="tab:blue")
-        header = ax_anim.text(0.5, 1.05, "", transform=ax_anim.transAxes, ha="center", fontsize=9)
+        if show_step:
+            slot_count = steps
+            slot_size = 1.0
+            total_length = slot_count * slot_size
+            ax_step.set_xlim(-0.5, total_length + 0.5)
+            ax_step.set_ylim(-0.75, 0.75)
+            ax_step.set_yticks([])
+            ax_step.set_xlabel("Grenailleuse step conveyor")
+
+            for i in range(slot_count):
+                rect = plt.Rectangle(
+                    (i * slot_size, -0.3),
+                    slot_size,
+                    0.6,
+                    fill=False,
+                    edgecolor="black",
+                    linewidth=1.5,
+                )
+                ax_step.add_patch(rect)
+            ax_step.vlines(0, -0.35, 0.35, color="tab:green", linewidth=2)
+            ax_step.vlines(total_length, -0.35, 0.35, color="tab:red", linewidth=2)
+            ax_step.text(0, 0.4, "Entry", ha="left", va="bottom", fontsize=9)
+            ax_step.text(total_length, 0.4, "Exit", ha="right", va="bottom", fontsize=9)
+
+        ax_var.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
+        ax_var.set_ylim(-1, 1.5)
+        ax_var.set_yticks([])
+        ax_var.set_xlabel("Variable conveyor position")
+        ax_var.set_title("Variable + Continuous Conveyor Bottle Movement")
+
+        ax_var.hlines(0, 0, length_second, color="black", linewidth=2)
+        ax_var.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+        ax_var.vlines(length_second, -0.2, 0.2, color="tab:red", linewidth=2)
+        ax_var.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
+        ax_var.text(length_second, 0.35, "Variable end", ha="right", va="bottom", fontsize=9)
+
+        ax_cont.set_xlim(-horizontal_spacing, cont_out_length + horizontal_spacing)
+        ax_cont.set_ylim(-1, 1.5)
+        ax_cont.set_yticks([])
+        ax_cont.set_xlabel("Continuous conveyor position")
+
+        ax_cont.hlines(0, 0, cont_out_length, color="black", linewidth=2)
+        ax_cont.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+        ax_cont.vlines(cont_out_length, -0.2, 0.2, color="tab:red", linewidth=2)
+        ax_cont.text(0, 0.35, "Continuous start", ha="left", va="bottom", fontsize=9)
+        ax_cont.text(cont_out_length, 0.35, "Det2 / Inspector input", ha="right", va="bottom", fontsize=9)
+
+        scat_var = ax_var.scatter([], [], s=60, color="tab:blue")
+        scat_cont = ax_cont.scatter([], [], s=60, color="tab:orange")
+        scat_step = ax_step.scatter([], [], s=80, color="tab:blue") if show_step else None
 
         def init_anim():
-            scat.set_offsets(np.empty((0, 2)))
-            header.set_text("")
-            return scat, header
+            scat_var.set_offsets(np.empty((0, 2)))
+            scat_cont.set_offsets(np.empty((0, 2)))
+            if show_step:
+                scat_step.set_offsets(np.empty((0, 2)))
+            return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
         def update_anim(frame):
             frame_positions = positions[frame]
@@ -309,18 +353,25 @@ if show_animation:
                 if frame_positions
                 else np.empty((0, 2))
             )
-            scat.set_offsets(offsets)
-            mode = "STEP" if position_log.get("step_mode", [False])[frame] else "CONT"
-            det1 = position_log.get("det1", [0])[frame]
-            det2 = position_log.get("det2", [0])[frame]
-            det3 = position_log.get("det3", [0])[frame]
-            det4 = position_log.get("det4", [0])[frame]
-            header.set_text(
-                "Mode: "
-                f"{mode} | det1:{det1} det2:{det2} det3:{det3} det4:{det4}"
-                f" | Arrived: {arrival_counts[frame]}"
+            scat_var.set_offsets(offsets)
+            frame_cont = cont_positions[frame] if frame < len(cont_positions) else []
+            cont_offsets = (
+                np.column_stack((frame_cont, np.zeros(len(frame_cont))))
+                if frame_cont
+                else np.empty((0, 2))
             )
-            return scat, header
+            scat_cont.set_offsets(cont_offsets)
+            if show_step and step_log.get("slots"):
+                step_idx = frame if frame < len(step_log["slots"]) else len(step_log["slots"]) - 1
+                slots = step_log["slots"][step_idx]
+                occupied = [i for i, v in enumerate(slots) if v is not None]
+                step_offsets = (
+                    np.column_stack((np.array(occupied) * slot_size + slot_size * 0.5, np.zeros(len(occupied))))
+                    if occupied
+                    else np.empty((0, 2))
+                )
+                scat_step.set_offsets(step_offsets)
+            return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
         anim = animation.FuncAnimation(
             fig_anim,
@@ -331,6 +382,6 @@ if show_animation:
             blit=False,
         )
         html = anim.to_jshtml()
-        components.html(html, height=260)
+        components.html(html, height=520 if show_step else 320)
     else:
         st.info("Animation indisponible : aucune position enregistrée.")

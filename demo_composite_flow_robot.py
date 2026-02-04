@@ -30,6 +30,7 @@ def create_step_conveyor(env, conveyor_id, step_time, steps, output_capacity=1):
 def arrival_process(
     env,
     p_buffer,
+    step_conveyor=None,
     mean_interval=12,
     down_time=0.05,
     min_inter=10,
@@ -37,7 +38,7 @@ def arrival_process(
     arrival_times=None,
 ):
     while True:
-        if p_buffer.container.level < p_buffer.container.capacity:
+        if _buffer_has_space(p_buffer):
             p = random.random()
             t = (
                 mean_interval
@@ -45,7 +46,7 @@ def arrival_process(
                 else mean_interval + random.uniform(min_inter, max_inter)
             )
             yield env.timeout(t)
-            yield p_buffer.container.put(1)
+            yield _buffer_put(p_buffer)
             if arrival_times is not None:
                 arrival_times.append(env.now)
         else:
@@ -54,7 +55,7 @@ def arrival_process(
 
 def load_step_conveyor(env, p_buffer, step_conveyor):
     while True:
-        yield p_buffer.container.get(1)
+        yield _buffer_get(p_buffer)
         placed = False
         while not placed:
             if step_conveyor["slots"][0] is None:
@@ -70,18 +71,40 @@ def load_step_conveyor(env, p_buffer, step_conveyor):
                 yield env.timeout(0.05) #identical to the clock rate of the sensor 
 
 
-def step_conveyor_advance(env, step_conveyor, gr_conv=12, exit_times=None):
+def _buffer_has_space(p_buffer):
+    if hasattr(p_buffer, "container"):
+        return p_buffer.container.level < p_buffer.container.capacity
+    capacity = getattr(p_buffer, "capacity", None)
+    if capacity is None:
+        return True
+    return len(p_buffer.items) < capacity
+
+
+def _buffer_put(p_buffer):
+    if hasattr(p_buffer, "container"):
+        return p_buffer.container.put(1)
+    return p_buffer.put(1)
+
+
+def _buffer_get(p_buffer):
+    if hasattr(p_buffer, "container"):
+        return p_buffer.container.get(1)
+    return p_buffer.get()
+
+
+def step_conveyor_advance(env, step_conveyor, gr_conv, exit_times=None, blocked_time=None):
     while True:
         any_items = any(slot is not None for slot in step_conveyor["slots"])
         output_full = len(step_conveyor["output_store"].items) >= step_conveyor["output_store"].capacity
         if not any_items or output_full:
+            if output_full and blocked_time is not None:
+                blocked_time[0] += step_conveyor["step_time"]
             yield env.timeout(step_conveyor["step_time"])
             print(rf'any_items{any_items} and output full {output_full}')
             #retries until there is space on the output store
             continue
         with step_conveyor["step_lock"].request() as req:
             yield req
-            yield env.timeout(step_conveyor["step_time"])
             exiting = step_conveyor["slots"][-1]
             for i in range(step_conveyor["steps"] - 1, 0, -1):
                 step_conveyor["slots"][i] = step_conveyor["slots"][i - 1]
@@ -89,10 +112,12 @@ def step_conveyor_advance(env, step_conveyor, gr_conv=12, exit_times=None):
             step_conveyor["slots"][0] = None
             if exiting is not None:
                 yield step_conveyor["output_store"].put(exiting)
+                
                 if exit_times is not None:
                     exit_times.append(env.now)
                 yield step_conveyor["space"].put(1) #frees up a space
                 yield env.timeout(gr_conv)
+        yield env.timeout(step_conveyor["step_time"])
 
 
 def continuous_conveyor_simple(
@@ -172,7 +197,7 @@ def variable_conveyor(
         det2 = 1 if len(inspect_buffer.items) > 0 else 0
         det1 = 1 if inspector.count > 0 else 0
 
-        desired_step_mode = (det2 == 1 or det3_state == 1 or det1 == 1)
+        desired_step_mode = not (det1 == 0) or not (det2 == 0) or (det2 == 1 or det3_state == 1 or det1 == 1)
         step_mode = desired_step_mode
         if last_mode is True and desired_step_mode is False:
             if env.now - last_mode_change_time < mode_switch_delay:
@@ -394,6 +419,7 @@ def demo_composite_flow(
         arrival_process(
             env,
             p_buffer,
+            step_g,
             mean_interval,
             down_time,
             min_inter,
@@ -404,7 +430,8 @@ def demo_composite_flow(
     grenailleuse_exit_times = []
     conveyor_exit_times = []
     env.process(load_step_conveyor(env, p_buffer, step_g))
-    env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times))
+    grenailleuse_blocked_time = [0.0]
+    env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time))
 
     def inspect_time():
         return random.uniform(inspect_min, inspect_max)
@@ -486,6 +513,7 @@ def demo_composite_flow(
         "inspected_times": inspected_times,
         "arrival_times": arrival_times,
         "grenailleuse_exit_times": grenailleuse_exit_times,
+        "grenailleuse_blocked_time": grenailleuse_blocked_time[0],
         "conveyor_exit_times": conveyor_exit_times,
         "monitor": monitor,
         "busy_time": busy_time[0],

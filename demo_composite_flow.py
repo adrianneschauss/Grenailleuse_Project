@@ -28,6 +28,7 @@ def create_step_conveyor(env, conveyor_id, step_time, steps, output_capacity=1):
 def arrival_process(
     env,
     p_buffer,
+    step_conveyor=None,
     mean_interval=12,
     down_time=0.05,
     min_inter=10,
@@ -35,7 +36,10 @@ def arrival_process(
     arrival_times=None,
 ):
     while True:
-        if p_buffer.container.level < p_buffer.container.capacity:
+        entry_available = True
+        if step_conveyor is not None:
+            entry_available = step_conveyor["slots"][0] is None
+        if entry_available and p_buffer.container.level < p_buffer.container.capacity:
             p = random.random()
             t = (
                 mean_interval
@@ -220,6 +224,7 @@ def demo_composite_flow(
         arrival_process(
             env,
             p_buffer,
+            step_g,
             mean_interval,
             down_time,
             min_inter,

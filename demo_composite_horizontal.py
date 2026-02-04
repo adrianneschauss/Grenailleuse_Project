@@ -96,6 +96,7 @@ def demo_composite_flow(
         arrival_process(
             env,
             p_buffer,
+            step_g,
             mean_interval,
             down_time,
             min_inter,
