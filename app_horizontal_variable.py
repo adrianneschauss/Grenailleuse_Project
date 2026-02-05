@@ -311,16 +311,16 @@ if show_animation:
         cont_positions = position_log.get("cont_positions", [])
         step_log = result.get("step_position_log", {})
 
-        show_step = bool(step_log.get("t"))
+        show_step = True
         cont_out_length = 1.5 * horizontal_spacing
 
         if show_step:
             fig_anim, (ax_step, ax_var, ax_cont) = plt.subplots(
-                3, 1, figsize=(9, 2), sharex=False, constrained_layout=True
+                3, 1, figsize=(10, 9.5), sharex=False, constrained_layout=True
             )
         else:
             fig_anim, (ax_var, ax_cont) = plt.subplots(
-                2, 1, figsize=(9, 0.5), sharex=False, constrained_layout=True
+                2, 1, figsize=(10, 5.5), sharex=False, constrained_layout=True
             )
             ax_step = None
 
@@ -415,11 +415,6 @@ if show_animation:
                 scat_step.set_offsets(step_offsets)
             return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
-        if show_static_preview and frame_indices:
-            preview_idx = frame_indices[-1]
-            update_anim(preview_idx)
-            st.pyplot(fig_anim)
-
         anim = animation.FuncAnimation(
             fig_anim,
             update_anim,
@@ -431,12 +426,16 @@ if show_animation:
         html = anim.to_jshtml()
         height = 560 if show_step else 360
         if animation_mode == "Statique":
+            if frame_indices:
+                update_anim(frame_indices[-1])
             st.pyplot(fig_anim)
         elif animation_mode == "Interactif":
             components.html(html, height=height, width=1000, scrolling=True)
         else:
             if len(html) > 5_000_000:
                 st.warning("Animation trop lourde pour l'affichage interactif. Affichage statique.")
+                if frame_indices:
+                    update_anim(frame_indices[-1])
                 st.pyplot(fig_anim)
             else:
                 components.html(html, height=height, width=1000, scrolling=True)
