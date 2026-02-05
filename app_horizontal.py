@@ -81,9 +81,6 @@ st.sidebar.header("Lancement")
 env_time = st.sidebar.number_input(
     "Temps de simulation (s)", min_value=1.0, value=to_float(Parameter.env_time), step=10.0
 )
-cont_out_capacity = st.sidebar.number_input(
-    "Capacité du tampon avant inspection", min_value=1, value=1, step=1
-)
 sample_time = st.sidebar.number_input(
     "Temps d'échantillonnage (s)", min_value=0.1, value=1.0, step=0.1
 )
@@ -100,7 +97,7 @@ result = demo_composite_flow(
     step_time=step_time,
     steps=steps,
     gr_conv=gr_conv,
-    cont_out_capacity=cont_out_capacity,
+    cont_out_capacity=1,
     length=length_second,
     length_first=length_first,
     length_second=length_second,
@@ -167,27 +164,6 @@ if arrival_t:
         color="#a36be6",
         label="Bouteilles arrivées (cumulatif)",
     )
-ax1.step(
-    monitor["t"],
-    monitor["cont_out_1"],
-    where="post",
-    color="#ff4d4d",
-    label="Tampon convoyeur 1",
-)
-ax1.step(
-    monitor["t"],
-    monitor["cont_out_2"],
-    where="post",
-    color="#ff9f1a",
-    label="Tampon convoyeur 2",
-)
-ax1.step(
-    monitor["t"],
-    monitor["inspect_buffer"],
-    where="post",
-    color="#4d79ff",
-    label="Tampon inspecteur",
-)
 if inspect_t:
     ax1.step(
         inspect_t,

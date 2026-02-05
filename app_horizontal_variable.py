@@ -47,9 +47,6 @@ gr_conv = st.sidebar.number_input(
 )
 
 st.sidebar.header("Convoyeur horizontal variable")
-length_second = st.sidebar.number_input(
-    "Longueur convoyeur (cm)", min_value=0.1, value=to_float(Parameter.length_second), step=0.1
-)
 horizontal_spacing = st.sidebar.number_input(
     "Espacement horizontal (cm)", min_value=0.1, value=to_float(Parameter.horizontal_spacing), step=0.1
 )
@@ -61,6 +58,17 @@ dt = st.sidebar.number_input(
 )
 mode_switch_delay = st.sidebar.number_input(
     "Délai changement mode (s)", min_value=0.0, value=to_float(Parameter.mode_switch_delay), step=0.1
+)
+
+st.sidebar.header("Paramètres convoyeur variable")
+det_hold_time = st.sidebar.number_input(
+    "Temps déclenchement détecteurs (s)", min_value=0.0, value=to_float(Parameter.det_hold_time), step=0.1
+)
+step_time_2 = st.sidebar.number_input(
+    "Temps de pas variable (s)", min_value=0.1, value=to_float(Parameter.step_time_2), step=0.1
+)
+length_second = st.sidebar.number_input(
+    "Longueur convoyeur 2 (cm)", min_value=0.1, value=to_float(Parameter.length_second), step=0.1
 )
 
 st.sidebar.header("Inspecteur")
@@ -75,9 +83,6 @@ t_dis = st.sidebar.number_input(
 )
 t_dis2 = st.sidebar.number_input(
     "Délai de déchargement (s)", min_value=0.0, value=to_float(Parameter.t_dis), step=1.0
-)
-hold_at_det2 = st.sidebar.number_input(
-    "Attente det2 (s)", min_value=0.0, value=to_float(Parameter.hold_at_det2), step=1.0
 )
 
 st.sidebar.header("Lancement")
@@ -105,6 +110,7 @@ result = demo_composite_flow(
     inspect_min=inspect_min,
     inspect_max=inspect_max,
     step_time=step_time,
+    step_time2=step_time_2,
     steps=steps,
     gr_conv=gr_conv,
     cont_out_capacity=cont_out_capacity,
@@ -119,7 +125,7 @@ result = demo_composite_flow(
     sample_time=sample_time,
     plot=False,
     mode_switch_delay=mode_switch_delay,
-    hold_at_det2=hold_at_det2,
+    det_hold_time=det_hold_time,
 )
 
 st.subheader("Résumé")
@@ -129,6 +135,9 @@ st.write(
         "Temps occupation": np.round(float(result["busy_time"]), 2),
         "Temps total": result["total_time"],
         "% du temps occupé": np.round(float(result["busy_time"] * 100 / result["total_time"]), 3),
+        "Temps continu": np.round(float(result.get("cont_time_total", 0.0)), 2),
+        "Temps pas": np.round(float(result.get("step_time_total", 0.0)), 2),
+        "Temps arrêt grenailleuse": np.round(float(result.get("grenailleuse_blocked_time", 0.0)), 2),
     }
 )
 
@@ -271,10 +280,35 @@ if len(arrival_times) > 1:
 else:
     st.info("Pas assez d'arrivées pour calculer les retards.")
 
+st.subheader("Distribution des arrivées")
+if len(arrival_times) > 1:
+    arrival_times_sorted = sorted(arrival_times)
+    inter = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
+    fig_arr, ax_arr = plt.subplots()
+    ax_arr.hist(inter, bins=20, color="tab:green", alpha=0.8)
+    ax_arr.set_xlabel("Temps entre arrivées (s)")
+    ax_arr.set_ylabel("Nombre")
+    ax_arr.set_title("Distribution des arrivées fixes")
+    st.pyplot(fig_arr)
+else:
+    st.info("Pas assez d'arrivées pour la distribution.")
+
+st.subheader("Occupation du convoyeur variable")
+position_log = result.get("position_log", {})
+times = position_log.get("t", [])
+positions = position_log.get("positions", [])
+if times and positions:
+    var_counts = [len(p) for p in positions]
+    fig_occ, ax_occ = plt.subplots()
+    ax_occ.plot(times, var_counts, linestyle="-")
+    ax_occ.set_xlabel("Temps")
+    ax_occ.set_ylabel("Bouteilles")
+    ax_occ.set_title("Occupation du convoyeur variable dans le temps")
+    st.pyplot(fig_occ)
+else:
+    st.info("Pas assez de données pour l'occupation du convoyeur variable.")
+
 if show_animation:
-    position_log = result.get("position_log", {})
-    times = position_log.get("t", [])
-    positions = position_log.get("positions", [])
     if times and positions:
         cont_positions = position_log.get("cont_positions", [])
         step_log = result.get("step_position_log", {})

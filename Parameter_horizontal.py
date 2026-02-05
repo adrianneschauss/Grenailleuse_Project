@@ -35,8 +35,8 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 
 #Continuous Conveyor
 #seconds
-# Variable n° ? : Nombre de bouteille dans le buffer
-step_time_2 = 5
+
+step_time_2 = 5 
 #capacity = 10
 #speed = 9 meters per minute (as i was told)
 

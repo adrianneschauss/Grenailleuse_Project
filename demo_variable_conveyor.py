@@ -443,10 +443,10 @@ def demo_composite_flow(
     env.run(env_time)
     idle_time = busy_time[0]
     print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
+    step_time_total = 0.0
+    cont_time_total = 0.0
+    switches = 0
     if position_log["t"]:
-        step_time_total = 0.0
-        cont_time_total = 0.0
-        switches = 0
         last_mode = position_log["step_mode"][0]
         for i in range(1, len(position_log["t"])):
             dt_sample = position_log["t"][i] - position_log["t"][i - 1]
@@ -591,6 +591,9 @@ def demo_composite_flow(
         "monitor": monitor,
         "busy_time": busy_time[0],
         "total_time": env.now,
+        "step_time_total": step_time_total,
+        "cont_time_total": cont_time_total,
+        "mode_switches": switches,
     }
 
 if __name__ == "__main__":
