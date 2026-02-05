@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 3600
+env_time = 3600/3
 
 
 #Bottle Arrival
@@ -54,9 +54,9 @@ inspect_max = 15
 t_dis = 3
 t_dis2 = 3
 #Hold time at det2 before inspector (seconds), coneyor that moves to inspector 
-det_hold_time = 15
+det_hold_time = 10
 #320/ hour 
-# 9 meters per minute (max: 16 metre per minute)
+# 9 meters per minute(15 cm per second) (max: 16 metre per minute= 26.67 cm per second)
 #One bottle in vertical: is 300 cm in diameter 
 #one bottle needing to be aligned horizontally is equivalent to 926 cm 
 #the entire line in either case is equivalent to 5802 cm 
@@ -80,4 +80,4 @@ dt = 1
 #50 pas minute a 50 hertz 
 
 #Mode switch hysteresis (seconds) to prevent rapid toggling
-mode_switch_delay = 10
+mode_switch_delay = 5

@@ -116,7 +116,7 @@ def demo_composite_flow(
         if p> 0.05:
             x= random.uniform(inspect_min, inspect_max)
         else: 
-            x = random.uniform(30, 70)
+            x = random.uniform(40,60)
         return x
 
     arrival_times = []

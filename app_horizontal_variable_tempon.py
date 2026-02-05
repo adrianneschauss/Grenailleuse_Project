@@ -6,10 +6,10 @@ import numpy as np
 from matplotlib import animation
 
 # Allow larger embedded animations in Streamlit.
-mpl.rcParams["animation.embed_limit"] = 60
+mpl.rcParams["animation.embed_limit"] = 200
 
 import Parameter_horizontal as Parameter
-from demo_variable_conveyor import demo_composite_flow
+from demo_variable_conveyor_tempon import demo_composite_flow
 
 
 def to_float(value):
@@ -18,8 +18,8 @@ def to_float(value):
     return float(value)
 
 
-st.set_page_config(page_title="Simulateur de Grenailleuse Variable (Horizontal)", layout="wide")
-st.title("Simulateur de Grenailleuse Variable (Horizontal)")
+st.set_page_config(page_title="Simulateur de Grenailleuse Variable (Horizontal) avec Tampon", layout="wide")
+st.title("Simulateur de Grenailleuse Variable (Horizontal) avec Tampon")
 
 st.sidebar.header("Arrivée")
 mean_interval = st.sidebar.number_input(
@@ -50,19 +50,17 @@ st.sidebar.header("Convoyeur horizontal variable")
 horizontal_spacing = st.sidebar.number_input(
     "Espacement horizontal (cm)", min_value=0.1, value=to_float(Parameter.horizontal_spacing), step=0.1
 )
+vertical_spacing = st.sidebar.number_input(
+    "Espacement vertical (cm)", min_value=0.1, value=to_float(Parameter.vertical_spacing), step=0.1
+)
+second_speed = st.sidebar.number_input(
+    "Vitesse convoyeur (cm/min)", min_value=0.1, value=to_float(Parameter.second_speed), step=0.1
+)
 dt = st.sidebar.number_input(
     "Pas de temps (dt en s)", min_value=0.1, value=to_float(Parameter.dt), step=0.1
 )
 mode_switch_delay = st.sidebar.number_input(
     "Délai changement mode (s)", min_value=0.0, value=to_float(Parameter.mode_switch_delay), step=0.1
-)
-
-st.sidebar.header("Convoyeur continu")
-length_third = st.sidebar.number_input(
-    "Longueur (cm)", min_value=0.1, value=to_float(Parameter.length_third), step=0.1
-)
-second_speed = st.sidebar.number_input(
-    "Vitesse (cm/s)", min_value=0.01, value=to_float(Parameter.second_speed), step=0.01
 )
 
 st.sidebar.header("Paramètres convoyeur variable")
@@ -72,8 +70,14 @@ det_hold_time = st.sidebar.number_input(
 step_time_2 = st.sidebar.number_input(
     "Temps de pas variable (s)", min_value=0.1, value=to_float(Parameter.step_time_2), step=0.1
 )
+length_first = st.sidebar.number_input(
+    "Longueur convoyeur 1 (cm)", min_value=0.1, value=to_float(Parameter.length_first), step=0.1
+)
 length_second = st.sidebar.number_input(
     "Longueur convoyeur 2 (cm)", min_value=0.1, value=to_float(Parameter.length_second), step=0.1
+)
+length_third = st.sidebar.number_input(
+    "Longueur convoyeur 3 (cm)", min_value=0.1, value=to_float(Parameter.length_third), step=0.1
 )
 
 st.sidebar.header("Inspecteur")
@@ -115,15 +119,17 @@ result = demo_composite_flow(
     inspect_min=inspect_min,
     inspect_max=inspect_max,
     step_time=step_time,
-    step_time2=step_time_2,
+    step_time_2=step_time_2,
     steps=steps,
     gr_conv=gr_conv,
     cont_out_capacity=cont_out_capacity,
     length=length_second,
+    length_first=length_first,
     length_second=length_second,
     length_third=length_third,
     spacing=horizontal_spacing,
     horizontal_spacing=horizontal_spacing,
+    vertical_spacing=vertical_spacing,
     speed=second_speed,
     second_speed=second_speed,
     dt=dt,
@@ -303,18 +309,19 @@ else:
 if show_animation:
     if times and positions:
         cont_positions = position_log.get("cont_positions", [])
+        pre_positions = position_log.get("pre_positions", [])
         step_log = result.get("step_position_log", {})
 
         show_step = bool(step_log.get("t"))
-        cont_out_length = 1.5 * horizontal_spacing
+        cont_out_length = length_third
 
         if show_step:
-            fig_anim, (ax_step, ax_var, ax_cont) = plt.subplots(
-                3, 1, figsize=(9, 2), sharex=False, constrained_layout=True
+            fig_anim, (ax_step, ax_pre, ax_var, ax_cont) = plt.subplots(
+                4, 1, figsize=(10, 11.5), sharex=False, constrained_layout=True
             )
         else:
-            fig_anim, (ax_var, ax_cont) = plt.subplots(
-                2, 1, figsize=(9, 0.5), sharex=False, constrained_layout=True
+            fig_anim, (ax_pre, ax_var, ax_cont) = plt.subplots(
+                3, 1, figsize=(10, 8.5), sharex=False, constrained_layout=True
             )
             ax_step = None
 
@@ -342,6 +349,16 @@ if show_animation:
             ax_step.text(0, 0.4, "Entry", ha="left", va="bottom", fontsize=9)
             ax_step.text(total_length, 0.4, "Exit", ha="right", va="bottom", fontsize=9)
 
+        ax_pre.set_xlim(-vertical_spacing, length_first + vertical_spacing)
+        ax_pre.set_ylim(-1, 1.5)
+        ax_pre.set_yticks([])
+        ax_pre.set_xlabel("Pre-variable conveyor position")
+        ax_pre.hlines(0, 0, length_first, color="black", linewidth=2)
+        ax_pre.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+        ax_pre.vlines(length_first, -0.2, 0.2, color="tab:red", linewidth=2)
+        ax_pre.text(0, 0.35, "Grenailleuse out", ha="left", va="bottom", fontsize=9)
+        ax_pre.text(length_first, 0.35, "Variable in", ha="right", va="bottom", fontsize=9)
+
         ax_var.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
         ax_var.set_ylim(-1, 1.5)
         ax_var.set_yticks([])
@@ -367,14 +384,16 @@ if show_animation:
 
         scat_var = ax_var.scatter([], [], s=60, color="tab:blue")
         scat_cont = ax_cont.scatter([], [], s=60, color="tab:orange")
+        scat_pre = ax_pre.scatter([], [], s=60, color="tab:purple")
         scat_step = ax_step.scatter([], [], s=80, color="tab:blue") if show_step else None
 
         def init_anim():
             scat_var.set_offsets(np.empty((0, 2)))
             scat_cont.set_offsets(np.empty((0, 2)))
+            scat_pre.set_offsets(np.empty((0, 2)))
             if show_step:
                 scat_step.set_offsets(np.empty((0, 2)))
-            return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
+            return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
 
         max_frames = 300
         step = max(1, len(times) // max_frames)
@@ -397,6 +416,13 @@ if show_animation:
                 else np.empty((0, 2))
             )
             scat_cont.set_offsets(cont_offsets)
+            frame_pre = pre_positions[frame_idx] if frame_idx < len(pre_positions) else []
+            pre_offsets = (
+                np.column_stack((frame_pre, np.zeros(len(frame_pre))))
+                if frame_pre
+                else np.empty((0, 2))
+            )
+            scat_pre.set_offsets(pre_offsets)
             if show_step and step_log.get("slots"):
                 step_idx = frame_idx if frame_idx < len(step_log["slots"]) else len(step_log["slots"]) - 1
                 slots = step_log["slots"][step_idx]
@@ -407,7 +433,7 @@ if show_animation:
                     else np.empty((0, 2))
                 )
                 scat_step.set_offsets(step_offsets)
-            return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
+            return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
 
         anim = animation.FuncAnimation(
             fig_anim,
@@ -418,6 +444,10 @@ if show_animation:
             blit=False,
         )
         html = anim.to_jshtml()
-        components.html(html, height=560 if show_step else 360)
+        if show_step:
+            height = 1250
+        else:
+            height = 900
+        components.html(html, height=height)
     else:
         st.info("Animation indisponible : aucune position enregistrée.")
