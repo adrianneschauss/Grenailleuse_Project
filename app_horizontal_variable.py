@@ -109,6 +109,7 @@ animation_mode = st.sidebar.selectbox(
     ["Auto", "Interactif", "Statique"],
     index=0,
 )
+show_static_preview = st.sidebar.checkbox("Aperçu statique", value=True)
 
 result = demo_composite_flow(
     mean_interval=mean_interval,
@@ -383,7 +384,7 @@ if show_animation:
 
         max_frames = 150
         step = max(1, len(times) // max_frames)
-        frame_indices = range(0, len(times), step)
+        frame_indices = list(range(0, len(times), step))
         if step > 1:
             st.caption(f"Animation échantillonnée (1 image sur {step}).")
 
@@ -413,6 +414,11 @@ if show_animation:
                 )
                 scat_step.set_offsets(step_offsets)
             return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
+
+        if show_static_preview and frame_indices:
+            preview_idx = frame_indices[-1]
+            update_anim(preview_idx)
+            st.pyplot(fig_anim)
 
         anim = animation.FuncAnimation(
             fig_anim,
