@@ -104,6 +104,11 @@ show_animation = st.sidebar.checkbox("Afficher animation", value=True)
 animation_interval_ms = st.sidebar.number_input(
     "Animation interval (ms)", min_value=10, value=50, step=10
 )
+animation_mode = st.sidebar.selectbox(
+    "Mode animation",
+    ["Auto", "Interactif", "Statique"],
+    index=0,
+)
 
 result = demo_composite_flow(
     mean_interval=mean_interval,
@@ -376,7 +381,7 @@ if show_animation:
                 scat_step.set_offsets(np.empty((0, 2)))
             return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
 
-        max_frames = 300
+        max_frames = 150
         step = max(1, len(times) // max_frames)
         frame_indices = range(0, len(times), step)
         if step > 1:
@@ -418,6 +423,16 @@ if show_animation:
             blit=False,
         )
         html = anim.to_jshtml()
-        components.html(html, height=560 if show_step else 360)
+        height = 560 if show_step else 360
+        if animation_mode == "Statique":
+            st.pyplot(fig_anim)
+        elif animation_mode == "Interactif":
+            components.html(html, height=height, width=1000, scrolling=True)
+        else:
+            if len(html) > 5_000_000:
+                st.warning("Animation trop lourde pour l'affichage interactif. Affichage statique.")
+                st.pyplot(fig_anim)
+            else:
+                components.html(html, height=height, width=1000, scrolling=True)
     else:
         st.info("Animation indisponible : aucune position enregistrée.")
