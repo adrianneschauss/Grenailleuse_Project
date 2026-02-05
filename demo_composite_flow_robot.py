@@ -108,7 +108,7 @@ def step_conveyor_advance(env, step_conveyor, gr_conv, exit_times=None, blocked_
             exiting = step_conveyor["slots"][-1]
             for i in range(step_conveyor["steps"] - 1, 0, -1):
                 step_conveyor["slots"][i] = step_conveyor["slots"][i - 1]
-            print(step_conveyor["slots"])
+            
             step_conveyor["slots"][0] = None
             if exiting is not None:
                 yield step_conveyor["output_store"].put(exiting)
@@ -141,7 +141,7 @@ def continuous_conveyor_simple(
         for item in items:
             item["pos"] += speed * dt
         pos_list = [float(np.round(item["pos"], 2)) for item in items]
-        print(pos_list)
+       
         exited = [item for item in items if item["pos"] >= length]
         items = [item for item in items if item["pos"] < length]
         for item in exited:
@@ -206,7 +206,6 @@ def variable_conveyor(
             step_acc = 0.0
             last_mode = step_mode
             last_mode_change_time = env.now
-            print("we are in step mode")
 
         if input_store.items and (not items or items[0]["pos"] >= spacing):
             item = yield input_store.get()
@@ -272,21 +271,29 @@ def continuous_conveyor(
     segment_length=None,
 ):
     items = []
+    max_items = int(length // spacing)
     while True:
-        if input_store.items and (not items or items[0]["pos"] >= spacing):
+        if (
+            input_store.items
+            and (not items or items[0]["pos"] >= spacing)
+            and len(items) < max_items
+        ):
             item = yield input_store.get()
             items.append({"id": item, "pos": 0.0})
         output_full = out_store.capacity is not None and len(out_store.items) >= out_store.capacity
-        gap = 0.0 if output_full else spacing
+        gap = spacing
         if items:
             items[0]["pos"] = items[0]["pos"] + speed * dt
             if output_full:
                 items[0]["pos"] = min(items[0]["pos"], length)
+            items[0]["pos"] = max(0.0, items[0]["pos"])
             for i in range(1, len(items)):
                 max_pos = items[i - 1]["pos"] - gap
                 items[i]["pos"] = min(items[i]["pos"] + speed * dt, max_pos)
+                if items[i]["pos"] < 0.0:
+                    items[i]["pos"] = 0.0
         pos_list = [float(np.round(item["pos"], 2)) for item in items]
-        print(pos_list)
+ 
         remaining = []
         for item in items:
             if item["pos"] >= length:
@@ -309,14 +316,14 @@ def continuous_conveyor(
 
 
 def inspector_process(
-    env, inspector, input_store, inspect_time_fn, inspected_times, busy_time, output_store=None
+    env, inspector, input_store, inspect_time, inspected_times, busy_time, output_store=None
 ):
     while True:
         item = yield input_store.get()
         with inspector.request() as req:
             yield req
             start = env.now
-            yield env.timeout(inspect_time_fn())
+            yield env.timeout(inspect_time())
             end = env.now
             busy_time[0] += end - start
         if output_store is not None:
@@ -434,7 +441,12 @@ def demo_composite_flow(
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time))
 
     def inspect_time():
-        return random.uniform(inspect_min, inspect_max)
+        p = random.random()
+        if p> 0.05:
+            x= random.uniform(inspect_min, inspect_max)
+        else: 
+            x = random.uniform(30, 70)
+        return x
     robot_times = []
     busyR_time = [0.0]
     
@@ -460,7 +472,7 @@ def demo_composite_flow(
     pre_inspect_delay = t_dis2
     post_inspect_delay = t_dis
     env.process(unload_delay(env, cont_out, inspect_buffer, pre_inspect_delay))
-
+####################################################################################################
     inspected_times = []
     busy_time = [0.0]
     env.process(
@@ -475,7 +487,7 @@ def demo_composite_flow(
         )
     )
     env.process(unload_delay(env, post_inspect, simpy.Store(env), post_inspect_delay))
-
+###########################################
     monitor = {
         "t": [],
         "cont_out": [],
@@ -498,6 +510,7 @@ def demo_composite_flow(
     env.run(env_time)
     idle_time = busy_time[0]
     print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
+    print(f"Grenailleuse blocked time: {grenailleuse_blocked_time[0]:.2f}s")
 
     if plot and inspected_times:
         inspected_times_sorted = sorted(inspected_times)

@@ -9,6 +9,7 @@ from demo_composite_flow_robot import (
     create_step_conveyor,
     load_step_conveyor,
     step_conveyor_advance,
+    continuous_conveyor,
     inspector_process,
     unload_delay,
 )
@@ -23,7 +24,7 @@ def demo_composite_flow(
     inspect_min=None,
     inspect_max=None,
     step_time=None,
-    step_time2 =None,
+    step_time_2 = None, 
     steps=None,
     gr_conv=None,
     cont_out_capacity=None,
@@ -67,8 +68,8 @@ def demo_composite_flow(
         inspect_max = Parameter_horizontal.inspect_max
     if step_time is None:
         step_time = Parameter_horizontal.step_time
-    if step_time2 is None:
-        step_time2 = Parameter_horizontal.step_time_2
+    if step_time_2 is None:
+        step_time_2 = Parameter_horizontal.step_time_2
     if steps is None:
         steps = Parameter_horizontal.steps
     if gr_conv is None:
@@ -136,13 +137,16 @@ def demo_composite_flow(
     env.process(load_step_conveyor(env, p_buffer, step_g))
     grenailleuse_blocked_time = [0.0]
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time)) 
-    # downstream chain: variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector
+    # downstream chain: pre-variable continuous conveyor -> variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector
+    pre_var_capacity = int(length_first // vertical_spacing)
+    pre_var_in = simpy.Store(env, capacity=pre_var_capacity)
     det1_hold = simpy.Store(env, capacity=1)
     cont_items_state = {"items": []}
     position_log = {
         "t": [],
         "positions": [],
         "cont_positions": [],
+        "pre_positions": [],
         "inspect_count": [],
         "step_mode": [],
         "det1": [],
@@ -154,6 +158,25 @@ def demo_composite_flow(
         "t": [],
         "slots": [],
     }
+
+    pre_position_state = {"positions": []}
+    def pre_conveyor_logger(now, segment_id, items, segment_length=None):
+        pre_position_state["positions"] = [item["pos"] for item in items]
+
+    env.process(
+        continuous_conveyor(
+            env,
+            length=length_first,
+            speed=12,
+            dt=dt,
+            input_store=step_g["output_store"],
+            spacing=vertical_spacing,
+            out_store=pre_var_in,
+            position_logger=pre_conveyor_logger,
+            segment_id="pre_var",
+            segment_length=length_first,
+        )
+    )
 
     def position_logger(
         now,
@@ -171,6 +194,7 @@ def demo_composite_flow(
         position_log["cont_positions"].append(
             [item["pos"] for item in cont_items_state["items"]]
         )
+        position_log["pre_positions"].append(pre_position_state["positions"])
         position_log["inspect_count"].append(len(det1_hold.items))
         position_log["step_mode"].append(step_mode)
         position_log["det1"].append(det1)
@@ -178,6 +202,7 @@ def demo_composite_flow(
         position_log["det3"].append(det3)
         position_log["det4"].append(det4)
 
+    
     def detector_active(hold_store, now, hold_time):
         if not hold_store.items:
             return 0
@@ -195,11 +220,11 @@ def demo_composite_flow(
         position_logger=None,
         segment_id=None,
         segment_length=None,
-        mode_switch_delay=0.0,
+        mode_switch_delay= None,
         step_time=Parameter_horizontal.step_time,
     ):
         items = []
-        max_items = int(length // spacing) 
+        max_items = int(length // spacing)
         if step_time is None:
             step_interval = spacing / speed if speed > 0 else dt
         else:
@@ -327,8 +352,7 @@ def demo_composite_flow(
         exit_times=None,
     ):
         items = []
-        print(rf" The current length second is {length} and spacing {spacing}")
-        max_items = int(length// spacing) 
+        max_items = int(length // spacing) 
         cont_items_state["items"] = items
         while True:
             if (not items or items[0]["pos"] >= spacing) and len(items) < max_items:
@@ -370,14 +394,14 @@ def demo_composite_flow(
             length=length_second,
             speed=first_speed,
             dt=dt,
-            input_store=step_g["output_store"],
+            input_store=pre_var_in,
             spacing=horizontal_spacing,
             state_ref=var_items_state,
             position_logger=position_logger,
             segment_id="variable",
             segment_length=length_second,
             mode_switch_delay=mode_switch_delay,
-            step_time=step_time2,
+            step_time=step_time,
         )
     )
     env.process(
@@ -470,10 +494,11 @@ def demo_composite_flow(
                 arrival_counts.append(arrival_idx)
 
             show_step = bool(step_position_log["t"])
+            show_pre = True
             if show_step:
-                fig, (ax_step, ax_var, ax_cont) = plt.subplots(3, 1, figsize=(8, 7.0), sharex=False)
+                fig, (ax_step, ax_pre, ax_var, ax_cont) = plt.subplots(4, 1, figsize=(8, 9.0), sharex=False)
             else:
-                fig, (ax_var, ax_cont) = plt.subplots(2, 1, figsize=(8, 4.8), sharex=False)
+                fig, (ax_pre, ax_var, ax_cont) = plt.subplots(3, 1, figsize=(8, 7.0), sharex=False)
                 ax_step = None
 
             if show_step:
@@ -499,6 +524,16 @@ def demo_composite_flow(
                 ax_step.vlines(total_length, -0.35, 0.35, color="tab:red", linewidth=2)
                 ax_step.text(0, 0.4, "Entry", ha="left", va="bottom", fontsize=9)
                 ax_step.text(total_length, 0.4, "Exit", ha="right", va="bottom", fontsize=9)
+
+            ax_pre.set_xlim(-vertical_spacing, length_first + vertical_spacing)
+            ax_pre.set_ylim(-1, 1.5)
+            ax_pre.set_yticks([])
+            ax_pre.set_xlabel("Pre-variable conveyor position")
+            ax_pre.hlines(0, 0, length_first, color="black", linewidth=2)
+            ax_pre.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
+            ax_pre.vlines(length_first, -0.2, 0.2, color="tab:red", linewidth=2)
+            ax_pre.text(0, 0.35, "Grenailleuse out", ha="left", va="bottom", fontsize=9)
+            ax_pre.text(length_first, 0.35, "Variable in", ha="right", va="bottom", fontsize=9)
             ax_var.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
             ax_var.set_ylim(-1, 1.5)
             ax_var.set_yticks([])
@@ -525,13 +560,15 @@ def demo_composite_flow(
             scat_var = ax_var.scatter([], [], s=60, color="tab:blue")
             scat_cont = ax_cont.scatter([], [], s=60, color="tab:orange")
             scat_step = ax_step.scatter([], [], s=80, color="tab:blue") if show_step else None
+            scat_pre = ax_pre.scatter([], [], s=60, color="tab:purple")
 
             def init():
                 scat_var.set_offsets(np.empty((0, 2)))
                 scat_cont.set_offsets(np.empty((0, 2)))
                 if show_step:
                     scat_step.set_offsets(np.empty((0, 2)))
-                return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
+                scat_pre.set_offsets(np.empty((0, 2)))
+                return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
 
             def update(frame):
                 positions = position_log["positions"][frame]
@@ -544,6 +581,13 @@ def demo_composite_flow(
                     else np.empty((0, 2))
                 )
                 scat_cont.set_offsets(cont_offsets)
+                pre_positions = position_log["pre_positions"][frame]
+                pre_offsets = (
+                    np.column_stack((pre_positions, np.zeros(len(pre_positions))))
+                    if pre_positions
+                    else np.empty((0, 2))
+                )
+                scat_pre.set_offsets(pre_offsets)
                 if show_step and step_position_log["t"]:
                     step_idx = frame if frame < len(step_position_log["t"]) else len(step_position_log["t"]) - 1
                     slots = step_position_log["slots"][step_idx]
@@ -554,7 +598,7 @@ def demo_composite_flow(
                         else np.empty((0, 2))
                     )
                     scat_step.set_offsets(step_offsets)
-                return (scat_step, scat_var, scat_cont) if show_step else (scat_var, scat_cont)
+                return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
 
             anim = animation.FuncAnimation(
                 fig,

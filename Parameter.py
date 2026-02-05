@@ -1,12 +1,12 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 3600/3
+env_time = 3600
 
 
 #Bottle Arrival
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
-down_time = 0.05
+down_time = 0.10
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -36,7 +36,7 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #Continuous Conveyor
 #seconds
 # Variable n° ? : Nombre de bouteille dans le buffer
-length = 457.6
+length = 498
 spacing = 30
 speed = 12
 dt = 1

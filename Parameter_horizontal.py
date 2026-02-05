@@ -1,12 +1,12 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 3600/3
+env_time = 3600
 
 
 #Bottle Arrival
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
-down_time = 0.05
+down_time = 0.10
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -36,7 +36,7 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #Continuous Conveyor
 #seconds
 # Variable n° ? : Nombre de bouteille dans le buffer
-
+step_time_2 = 5
 #capacity = 10
 #speed = 9 meters per minute (as i was told)
 
@@ -44,7 +44,7 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 12
+inspect_max = 15
 
 
 #Load and Unload from Inspector 
@@ -54,7 +54,7 @@ inspect_max = 12
 t_dis = 3
 t_dis2 = 3
 #Hold time at det2 before inspector (seconds), coneyor that moves to inspector 
-det_hold_time = 10
+det_hold_time = 15
 #320/ hour 
 # 9 meters per minute (max: 16 metre per minute)
 #One bottle in vertical: is 300 cm in diameter 
@@ -64,10 +64,12 @@ det_hold_time = 10
 #Horizontal conveyor Additional parameters
 length_first = 151.4
 #1514
-length_second = 457.6
-#3900
-vertical_spacing = 30
-#300
+length_second = 395
+#3950
+length_third = 93
+
+vertical_spacing = 35
+#300 its actually thirty but we need change this to 4
 horizontal_spacing= 85
 #926
 first_speed = 8
