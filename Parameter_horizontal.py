@@ -27,7 +27,7 @@ step_time = 7 #according to jerome
 #Variable n°7 : Nombre de bouteille dans la grenailleuse (par exemple 8 bouteilles)
 steps = 8
 #Variable n°8 : Temps de déchargement de la bouteille sur le convoyeur (par exemple 12 secondes)
-gr_conv = 1 #the time that we need to discharge (at which point the step conveyour doesnt move)
+gr_conv = 8 #the time that we need to discharge (at which point the step conveyour doesnt move)
 #for continous stepping the bottle goes from post[0] to post[1] in 56 seconds, but longer due
 #to the gr_conv = 12 seconds 
 #!!question: shoudl this part be outside of the resource so that the conveyor still moves?

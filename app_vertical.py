@@ -156,20 +156,6 @@ if arrival_t:
         color="#a36be6",
         label="Bouteilles arrivées (cumulatif)",
     )
-ax1.step(
-    monitor["t"],
-    monitor["cont_out"],
-    where="post",
-    color="#ff4d4d",
-    label="Tampon convoyeur continu",
-)
-ax1.step(
-    monitor["t"],
-    monitor["inspect_buffer"],
-    where="post",
-    color="#4d79ff",
-    label="Tampon inspecteur",
-)
 if inspect_t:
     ax1.step(
         inspect_t,
