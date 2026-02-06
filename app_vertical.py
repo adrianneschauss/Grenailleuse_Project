@@ -252,3 +252,29 @@ if len(arrival_times) > 1:
     st.pyplot(fig3)
 else:
     st.info("Pas assez d'arrivées pour calculer les retards.")
+
+st.subheader("Distribution des arrivées")
+if len(arrival_times) > 1:
+    arrival_times_sorted = sorted(arrival_times)
+    inter = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
+    fig_arr, ax_arr = plt.subplots()
+    ax_arr.hist(inter, bins=20, color="tab:green", alpha=0.8)
+    ax_arr.set_xlabel("Temps entre arrivées (s)")
+    ax_arr.set_ylabel("Nombre")
+    ax_arr.set_title("Distribution des arrivées fixes")
+    st.pyplot(fig_arr)
+else:
+    st.info("Pas assez d'arrivées pour la distribution.")
+
+st.subheader("Occupation du convoyeur continu")
+cont_times = monitor.get("t", [])
+cont_counts = monitor.get("cont_out", [])
+if cont_times and cont_counts:
+    fig_occ, ax_occ = plt.subplots()
+    ax_occ.plot(cont_times, cont_counts, linestyle="-")
+    ax_occ.set_xlabel("Temps")
+    ax_occ.set_ylabel("Bouteilles")
+    ax_occ.set_title("Occupation du convoyeur continu dans le temps")
+    st.pyplot(fig_occ)
+else:
+    st.info("Pas assez de données pour l'occupation du convoyeur continu.")

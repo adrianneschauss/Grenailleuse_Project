@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 3600
+env_time = 5000
 #57600
 
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
@@ -32,18 +32,34 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #to the gr_conv = 12 seconds 
 #!!question: shoudl this part be outside of the resource so that the conveyor still moves?
 
-#Continuous Conveyor
-#seconds
 
-step_time_2 = 7 
-#capacity = 10
-#speed = 9 meters per minute (as i was told)
+#Vertical Conveyor
+speed = 10
+
+length = 498
+
+spacing = 30
+
+#Variable conveyor
+step_time_2 = 7
+
+first_speed = 10
+second_speed = 12
+
+length_first = 151.4
+length_second = 395
+length_third = 93
+
+vertical_spacing = 35
+horizontal_spacing= 85
+
+
 
 #Inspector
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 15
+inspect_max = 12
 min = 30
 max = 40
 s = 0.05
@@ -61,23 +77,11 @@ det_hold_time = 10
 #One bottle in vertical: is 300 cm in diameter 
 #one bottle needing to be aligned horizontally is equivalent to 926 cm 
 #the entire line in either case is equivalent to 5802 cm 
-length = 498
-spacing = 30
-speed = 12
 
 #Horizontal conveyor Additional parameters
-length_first = 151.4
-#1514
-length_second = 395
-#3950
-length_third = 93
 
-vertical_spacing = 35
-#300 its actually thirty but we need change this to 4
-horizontal_spacing= 85
 #926
-first_speed = 8
-second_speed = 12
+
 dt = 1
  #the total length is 4876 but since we need an additional 926 as a sink this is actually only 4876-850
 
