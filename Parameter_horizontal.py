@@ -1,9 +1,8 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 3600/3
+env_time = 3600
+#57600
 
-
-#Bottle Arrival
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
 down_time = 0.10
@@ -36,7 +35,7 @@ gr_conv = 1 #the time that we need to discharge (at which point the step conveyo
 #Continuous Conveyor
 #seconds
 
-step_time_2 = 5 
+step_time_2 = 7 
 #capacity = 10
 #speed = 9 meters per minute (as i was told)
 
@@ -45,7 +44,9 @@ step_time_2 = 5
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
 inspect_max = 15
-
+min = 30
+max = 40
+s = 0.05
 
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
@@ -60,6 +61,9 @@ det_hold_time = 10
 #One bottle in vertical: is 300 cm in diameter 
 #one bottle needing to be aligned horizontally is equivalent to 926 cm 
 #the entire line in either case is equivalent to 5802 cm 
+length = 498
+spacing = 30
+speed = 12
 
 #Horizontal conveyor Additional parameters
 length_first = 151.4

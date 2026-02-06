@@ -2,7 +2,7 @@ import argparse
 import csv
 from pathlib import Path
 
-from demo_composite_horizontal import demo_composite_flow
+from additional_demos.demo_composite_horizontal import demo_composite_flow
 
 
 def export_positions(csv_path, env_time=None):

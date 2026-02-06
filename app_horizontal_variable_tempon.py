@@ -87,6 +87,15 @@ inspect_min = st.sidebar.number_input(
 inspect_max = st.sidebar.number_input(
     "Inspection max (s)", min_value=0.1, value=to_float(Parameter.inspect_max), step=1.0
 )
+s = st.sidebar.slider(
+    "Probabilité pause longue", min_value=0.0, max_value=1.0, value=float(Parameter.s), step=0.01
+)
+min_long = st.sidebar.slider(
+    "Pause longue min (s)", min_value=0.0, max_value=200.0, value=float(Parameter.min), step=1.0
+)
+max_long = st.sidebar.slider(
+    "Pause longue max (s)", min_value=0.0, max_value=200.0, value=float(Parameter.max), step=1.0
+)
 t_dis = st.sidebar.number_input(
     "Délai de chargement (s)", min_value=0.0, value=to_float(Parameter.t_dis2), step=1.0
 )
@@ -124,6 +133,9 @@ result = demo_composite_flow(
     t_dis2=t_dis2,
     inspect_min=inspect_min,
     inspect_max=inspect_max,
+    max_long=max_long,
+    min_long=min_long,
+    s=s,
     step_time=step_time,
     step_time_2=step_time_2,
     steps=steps,

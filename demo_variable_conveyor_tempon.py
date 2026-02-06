@@ -4,7 +4,7 @@ import simpy
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import Parameter_horizontal
-from demo_composite_flow_robot import (
+from functions import (
     arrival_process,
     create_step_conveyor,
     load_step_conveyor,
@@ -12,6 +12,7 @@ from demo_composite_flow_robot import (
     continuous_conveyor,
     inspector_process,
     unload_delay,
+    inspect_time
 )
 
 def demo_composite_flow(
@@ -23,6 +24,9 @@ def demo_composite_flow(
     t_dis2=None,
     inspect_min=None,
     inspect_max=None,
+    max_long = None,
+    min_long = None,
+    s = None,
     step_time=None,
     step_time_2 = None, 
     steps=None,
@@ -66,6 +70,12 @@ def demo_composite_flow(
         inspect_min = Parameter_horizontal.inspect_min
     if inspect_max is None:
         inspect_max = Parameter_horizontal.inspect_max
+    if max_long is None:
+        max_long = Parameter_horizontal.max
+    if min_long is None:
+        min_long = Parameter_horizontal.min 
+    if s is None:
+        s = Parameter_horizontal.s
     if step_time is None:
         step_time = Parameter_horizontal.step_time
     if step_time_2 is None:
@@ -111,15 +121,6 @@ def demo_composite_flow(
     grenailleuse_exit_times = []
     second_conv_exit_times = [] 
     inspector = simpy.Resource(env, capacity=1)
-
-    def inspect_time():
-        p = random.random()
-        if p> 0.05:
-            x= random.uniform(inspect_min, inspect_max)
-        else: 
-            x = random.uniform(40, 60)
-        return x
-
     arrival_times = []
     env.process(
         arrival_process(
@@ -142,6 +143,7 @@ def demo_composite_flow(
     pre_var_in = simpy.Store(env, capacity=pre_var_capacity)
     det1_hold = simpy.Store(env, capacity=1)
     cont_items_state = {"items": []}
+    det_state = {"det1": 0, "det2": 0, "det3": 0, "det4": 0}
     position_log = {
         "t": [],
         "positions": [],
@@ -311,6 +313,10 @@ def demo_composite_flow(
                 else:
                     item.pop("start_hold_start", None)
             state_ref["items"] = items
+            det_state["det1"] = det1
+            det_state["det2"] = det2
+            det_state["det3"] = det3_state
+            det_state["det4"] = det4_state
 
             if position_logger is not None:
                 position_logger(
@@ -338,6 +344,44 @@ def demo_composite_flow(
                         cont_end_state["active"] = 1
                         break
             yield env.timeout(dt)
+
+    def grenailleuse_speed_controller(
+        control_dt=1.0,
+        window_s=30.0,
+        slow_ratio=0.7,
+        fast_ratio=0.2,
+        streak_required=3,
+        slow_factor=1.1,
+        fast_factor=0.9,
+    ):
+        from collections import deque
+        window_len = max(1, int(window_s / control_dt))
+        slow_window = deque(maxlen=window_len)
+        fast_window = deque(maxlen=window_len)
+        slow_streak = 0
+        fast_streak = 0
+        base_step = step_g["step_time"]
+        min_step = base_step * 0.5
+        max_step = base_step * 2.0
+        while True:
+            d1 = det_state["det1"]
+            d2 = det_state["det2"]
+            d3 = det_state["det3"]
+            slow_window.append(1 if (d1 and d2 and d3) else 0)
+            fast_window.append(1 if (d1 and d2) else 0)
+            slow_ratio_now = sum(slow_window) / len(slow_window)
+            fast_ratio_now = sum(fast_window) / len(fast_window)
+            slow_streak = slow_streak + 1 if slow_ratio_now >= slow_ratio else 0
+            fast_streak = fast_streak + 1 if fast_ratio_now <= fast_ratio else 0
+            if slow_streak >= streak_required:
+                step_g["step_time"] = min(step_g["step_time"] * slow_factor, max_step)
+                slow_streak = 0
+                fast_streak = 0
+            elif fast_streak >= streak_required:
+                step_g["step_time"] = max(step_g["step_time"] * fast_factor, min_step)
+                slow_streak = 0
+                fast_streak = 0
+            yield env.timeout(control_dt)
 
     def continuous_conveyor_segment_with_state(
         env,
@@ -419,6 +463,7 @@ def demo_composite_flow(
         )
     )
     env.process(cont_end_detector())
+    #env.process(grenailleuse_speed_controller())
     post_inspect = simpy.Store(env)
 
     post_inspect_delay = 0.0
@@ -430,7 +475,7 @@ def demo_composite_flow(
             env,
             inspector,
             det1_hold,
-            inspect_time,
+            lambda: inspect_time(inspect_min, inspect_max, s, max_long, min_long),
             inspected_times,
             busy_time,
             output_store=post_inspect,
