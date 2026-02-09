@@ -121,11 +121,30 @@ inspected_times = result["inspected_times"]
 if inspected_times:
     inspected_times_sorted = sorted(inspected_times)
     counts = list(range(1, len(inspected_times_sorted) + 1))
-    fig, ax = plt.subplots()
-    ax.plot(inspected_times_sorted, counts, marker="x", linestyle="-")
-    ax.set_xlabel("Temps")
-    ax.set_ylabel("Bouteilles inspectées cumulées")
-    ax.set_title("Sortie des bouteilles dans le temps")
+    fig, ax = plt.subplots(figsize=(6, 4))
+    fig.patch.set_facecolor("black")
+    ax.set_facecolor("black")
+    ax.plot(inspected_times_sorted, counts, linestyle="-", color="#00c8ff", label="Cumul")
+    marker_idx = [i for i, c in enumerate(counts) if c % 50 == 0]
+    if marker_idx:
+        marker_times = [inspected_times_sorted[i] for i in marker_idx]
+        marker_counts = [counts[i] for i in marker_idx]
+        ax.plot(
+            marker_times,
+            marker_counts,
+            linestyle="None",
+            marker="o",
+            color="#ff9f1a",
+            label="Marqueur / 50",
+        )
+    ax.set_xlabel("Temps", color="white")
+    ax.set_ylabel("Bouteilles inspectées cumulées", color="white")
+    ax.set_title("Sortie des bouteilles dans le temps", color="white")
+    ax.tick_params(colors="white")
+    for spine in ax.spines.values():
+        spine.set_color("white")
+    ax.grid(True, color="#444444", alpha=0.6)
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     st.pyplot(fig)
 else:
     st.info("Aucune bouteille inspectée pour l'instant.")
@@ -230,11 +249,17 @@ if len(arrival_times) > 1:
     arrival_times_sorted = sorted(arrival_times)
     deltas = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
     delays = [max(0.0, d - mean_interval) for d in deltas]
-    fig3, ax3 = plt.subplots()
-    ax3.plot(arrival_times_sorted[1:], delays, marker="o", linestyle="-")
-    ax3.set_xlabel("Temps")
-    ax3.set_ylabel("Retard vs intervalle moyen (s)")
-    ax3.set_title("Retard d'arrivée des bouteilles")
+    fig3, ax3 = plt.subplots(figsize=(6, 4))
+    fig3.patch.set_facecolor("black")
+    ax3.set_facecolor("black")
+    ax3.plot(arrival_times_sorted[1:], delays, linestyle="-", color="#00c8ff")
+    ax3.set_xlabel("Temps", color="white")
+    ax3.set_ylabel("Retard vs intervalle moyen (s)", color="white")
+    ax3.set_title("Retard d'arrivée des bouteilles", color="white")
+    ax3.tick_params(colors="white")
+    for spine in ax3.spines.values():
+        spine.set_color("white")
+    ax3.grid(True, color="#444444", alpha=0.6)
     st.pyplot(fig3)
 else:
     st.info("Pas assez d'arrivées pour calculer les retards.")
@@ -243,11 +268,20 @@ st.subheader("Distribution des arrivées")
 if len(arrival_times) > 1:
     arrival_times_sorted = sorted(arrival_times)
     inter = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
-    fig_arr, ax_arr = plt.subplots()
-    ax_arr.hist(inter, bins=20, color="tab:green", alpha=0.8)
-    ax_arr.set_xlabel("Temps entre arrivées (s)")
-    ax_arr.set_ylabel("Nombre")
-    ax_arr.set_title("Distribution des arrivées fixes")
+    fig_arr, ax_arr = plt.subplots(figsize=(6, 4))
+    fig_arr.patch.set_facecolor("black")
+    ax_arr.set_facecolor("black")
+    ax_arr.hist(inter, bins=20, color="#2bd92b", alpha=0.8)
+    mean_inter = float(np.mean(inter)) if inter else 0.0
+    ax_arr.axvline(mean_inter, color="#ff9f1a", linestyle="--", linewidth=2, label=f"Moyenne = {mean_inter:.2f}s")
+    ax_arr.set_xlabel("Temps entre arrivées (s)", color="white")
+    ax_arr.set_ylabel("Nombre", color="white")
+    ax_arr.set_title("Distribution des arrivées fixes", color="white")
+    ax_arr.tick_params(colors="white")
+    for spine in ax_arr.spines.values():
+        spine.set_color("white")
+    ax_arr.grid(True, color="#444444", alpha=0.6)
+    ax_arr.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     st.pyplot(fig_arr)
 else:
     st.info("Pas assez d'arrivées pour la distribution.")

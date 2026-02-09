@@ -16,6 +16,7 @@ from functions import (
 )
 
 def demo_composite_flow(
+    variable_speed = None,
     mean_interval=None,
     down_time=None,
     min_inter=None,
@@ -53,7 +54,8 @@ def demo_composite_flow(
     det_hold_time = None
 ):
     env = simpy.Environment()
-
+    if variable_speed is None:
+        variable_speed = Parameter_horizontal.variable_speed
     if mean_interval is None:
         mean_interval = Parameter_horizontal.mean_interval
     if down_time is None:
@@ -463,7 +465,11 @@ def demo_composite_flow(
         )
     )
     env.process(cont_end_detector())
-    #env.process(grenailleuse_speed_controller())
+    if variable_speed:
+        env.process(grenailleuse_speed_controller())
+    else:
+        pass
+    
     post_inspect = simpy.Store(env)
 
     post_inspect_delay = 0.0
@@ -591,12 +597,16 @@ def demo_composite_flow(
             ax_var.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
             ax_var.text(length_second, 0.35, "Variable end", ha="right", va="bottom", fontsize=9)
 
-            ax_cont.set_xlim(-horizontal_spacing, length_third + horizontal_spacing)
+            box_size = 0.6
+            buffer_x = length_third + horizontal_spacing * 0.4
+            inspector_x = length_third + horizontal_spacing * 1.1
+            ax_cont.set_xlim(-horizontal_spacing, length_third + horizontal_spacing * 2.0)
             ax_cont.set_ylim(-1, 1.5)
             ax_cont.set_yticks([])
             ax_cont.set_xlabel("Continuous conveyor position")
 
             ax_cont.hlines(0, 0, length_third, color="black", linewidth=2)
+            ax_cont.hlines(0, length_third, buffer_x, color="black", linewidth=1.0, linestyle="--")
             ax_cont.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
             ax_cont.vlines(length_third, -0.2, 0.2, color="tab:red", linewidth=2)
             ax_cont.text(0, 0.35, "Continuous start", ha="left", va="bottom", fontsize=9)
@@ -606,6 +616,29 @@ def demo_composite_flow(
             scat_cont = ax_cont.scatter([], [], s=60, color="tab:orange")
             scat_step = ax_step.scatter([], [], s=80, color="tab:blue") if show_step else None
             scat_pre = ax_pre.scatter([], [], s=60, color="tab:purple")
+            buffer_box = plt.Rectangle(
+                (buffer_x - box_size / 2, -box_size / 2),
+                box_size,
+                box_size,
+                fill=False,
+                edgecolor="black",
+                linewidth=1.5,
+            )
+            inspector_box = plt.Rectangle(
+                (inspector_x - box_size / 2, -box_size / 2),
+                box_size,
+                box_size,
+                fill=False,
+                edgecolor="black",
+                linewidth=1.5,
+            )
+            ax_cont.add_patch(buffer_box)
+            ax_cont.add_patch(inspector_box)
+            ax_cont.text(buffer_x, 0.55, "Inspect buffer", ha="center", va="bottom", fontsize=9)
+            ax_cont.text(inspector_x, 0.55, "Inspector", ha="center", va="bottom", fontsize=9)
+            scat_buffer = ax_cont.scatter([], [], s=90, color="tab:green")
+            scat_inspector = ax_cont.scatter([], [], s=90, color="tab:red")
+            scat_handoff = ax_cont.scatter([], [], s=60, color="tab:orange")
 
             def init():
                 scat_var.set_offsets(np.empty((0, 2)))
@@ -613,13 +646,17 @@ def demo_composite_flow(
                 if show_step:
                     scat_step.set_offsets(np.empty((0, 2)))
                 scat_pre.set_offsets(np.empty((0, 2)))
-                return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
+                scat_buffer.set_offsets(np.empty((0, 2)))
+                scat_inspector.set_offsets(np.empty((0, 2)))
+                scat_handoff.set_offsets(np.empty((0, 2)))
+                return (scat_step, scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff) if show_step else (scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff)
 
             def update(frame):
                 positions = position_log["positions"][frame]
                 offsets = np.column_stack((positions, np.zeros(len(positions)))) if positions else np.empty((0, 2))
                 scat_var.set_offsets(offsets)
                 cont_positions = position_log["cont_positions"][frame]
+                cont_positions = [min(p, length_third) for p in cont_positions]
                 cont_offsets = (
                     np.column_stack((cont_positions, np.zeros(len(cont_positions))))
                     if cont_positions
@@ -643,7 +680,24 @@ def demo_composite_flow(
                         else np.empty((0, 2))
                     )
                     scat_step.set_offsets(step_offsets)
-                return (scat_step, scat_pre, scat_var, scat_cont) if show_step else (scat_pre, scat_var, scat_cont)
+                inspect_counts = position_log.get("inspect_count", [])
+                has_buffer = frame < len(inspect_counts) and inspect_counts[frame] > 0
+                if has_buffer:
+                    scat_buffer.set_offsets(np.array([[buffer_x, 0.0]]))
+                else:
+                    scat_buffer.set_offsets(np.empty((0, 2)))
+                inspector_busy = monitor.get("inspector_busy", [])
+                has_inspector = frame < len(inspector_busy) and inspector_busy[frame] > 0
+                if has_inspector:
+                    scat_inspector.set_offsets(np.array([[inspector_x, 0.0]]))
+                else:
+                    scat_inspector.set_offsets(np.empty((0, 2)))
+                needs_handoff = has_buffer and (not cont_positions or max(cont_positions) < length_third - 1e-6)
+                if needs_handoff:
+                    scat_handoff.set_offsets(np.array([[length_third, 0.0]]))
+                else:
+                    scat_handoff.set_offsets(np.empty((0, 2)))
+                return (scat_step, scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff) if show_step else (scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff)
 
             anim = animation.FuncAnimation(
                 fig,

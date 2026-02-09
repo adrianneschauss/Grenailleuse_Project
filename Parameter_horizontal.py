@@ -1,11 +1,14 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 5000
+env_time = 60*60*2
+
 #57600
 
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
-down_time = 0.10
+
+variable_speed = True
+down_time = 0.05
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -34,7 +37,7 @@ gr_conv = 8 #the time that we need to discharge (at which point the step conveyo
 
 
 #Vertical Conveyor
-speed = 10
+speed = 13
 
 length = 498
 
@@ -43,8 +46,8 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 7
 
-first_speed = 10
-second_speed = 12
+first_speed = 12
+second_speed = 13
 
 length_first = 151.4
 length_second = 395
@@ -59,10 +62,10 @@ horizontal_spacing= 85
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 12
+inspect_max = 10
 min = 30
 max = 40
-s = 0.05
+s = 0.20
 
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.

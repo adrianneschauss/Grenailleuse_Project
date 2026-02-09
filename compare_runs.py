@@ -38,7 +38,6 @@ def run_n(label, fn, n, seed_base=1234):
         "cont_time_mean": pct(mean(cont_times) if cont_times else 0.0),
     }
 
-
 def print_table(rows, headers):
     col_widths = [len(h) for h in headers]
     for row in rows:
@@ -61,9 +60,12 @@ def one_decimal(value):
 def main():
     n_runs = 10
     results = [
-        run_n("robot", run_robot, n_runs),
-        run_n("variable", run_variable, n_runs),
-        run_n("tempon", run_tempon, n_runs),
+        run_n("Robot", lambda **kwargs: run_robot(variable_speed=False, **kwargs), n_runs),
+        run_n("Variable ", lambda **kwargs: run_variable(variable_speed=False, **kwargs), n_runs),
+        run_n("Tempon", lambda **kwargs: run_tempon(variable_speed=False, **kwargs), n_runs),
+        run_n("Robot w Variable Speed", lambda **kwargs: run_robot(variable_speed=True, **kwargs), n_runs),
+        run_n("Variable w Variable Speed", lambda **kwargs: run_variable(variable_speed=True, **kwargs), n_runs),
+        run_n("Tempon w Variable Speed", lambda **kwargs: run_tempon(variable_speed=True, **kwargs), n_runs),
     ]
 
     for row in results:
