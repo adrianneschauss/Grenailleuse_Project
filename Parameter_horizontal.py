@@ -46,9 +46,9 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 7
 
-speed_tempon = 13
+speed_tempon = 12
 first_speed = 12
-second_speed = 13
+second_speed = 14
 
 length_first = 151.4
 length_second = 395
@@ -63,7 +63,7 @@ horizontal_spacing= 85
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 10
+inspect_max = 15
 min = 30
 max = 40
 s = 0.20

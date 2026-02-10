@@ -266,8 +266,8 @@ def demo_composite_flow(
 
     env.run(env_time)
     idle_time = busy_time[0]
-    print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
-    print(f"Grenailleuse blocked time: {grenailleuse_blocked_time[0]:.2f}s")
+    #print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
+    #print(f"Grenailleuse blocked time: {grenailleuse_blocked_time[0]:.2f}s")
 
     if plot and inspected_times:
         inspected_times_sorted = sorted(inspected_times)

@@ -520,7 +520,7 @@ def demo_composite_flow(
 
     env.run(env_time)
     idle_time = busy_time[0]
-    print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
+    #print(f"Inspector busy time: {idle_time:.2f}s over {env.now:.2f}s total")
     step_time_total = 0.0
     cont_time_total = 0.0
     switches = 0
@@ -535,7 +535,7 @@ def demo_composite_flow(
             if position_log["step_mode"][i] != last_mode:
                 switches += 1
                 last_mode = position_log["step_mode"][i]
-        print(f"Mode totals: STEP={step_time_total:.2f}s CONT={cont_time_total:.2f}s switches={switches}")
+        #print(f"Mode totals: STEP={step_time_total:.2f}s CONT={cont_time_total:.2f}s switches={switches}")
 
     if animate:
         if position_log["t"]:
@@ -723,7 +723,6 @@ def demo_composite_flow(
         plt.title("Output Bottles Over Time")
         plt.tight_layout()
         plt.show()
-        print 
 
     return {
         "inspected_times": inspected_times,

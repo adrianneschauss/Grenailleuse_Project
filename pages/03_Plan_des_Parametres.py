@@ -90,7 +90,7 @@ if layout_path.exists():
           box.innerHTML = `
             <b><u>Paramètres Arrivée</u></b><br/>
             <b>Intervalle moyen (s):</b> temps entre deux arrivées, hors interruptions.<br/>
-            <b>Probabilité d'arrêt:</b> probabilité qu'un arrêt survienne pendant la simulation; sa durée est comprise entre interruption min. et max.<br/>
+            <b>Probabilité d'arrêt:</b> probabilité qu'un arrêt de bouteilles (avant grenailleuse) survienne pendant la simulation; sa durée est comprise entre interruption min. et max.<br/>
             <b>Interruption min (s):</b> durée minimale ajoutée à l'intervalle moyen lorsque la grenailleuse est à l'arrêt.<br/>
             <b>Interruption max (s):</b> durée maximale ajoutée à l'intervalle moyen lorsque la grenailleuse est à l'arrêt.
           `;
@@ -164,7 +164,7 @@ if layout_path.exists():
             <b><u>Inspecteur</u></b><br/>
             <b>Inspection min (s):</b> temps minimum d'inspection (temps normal, sans pause).<br/>
             <b>Inspection max (s):</b> temps maximum d'inspection (temps normal, sans pause).<br/>
-            <b>Probabilité pause longue:</b> probabilité que l'inspecteur prenne une pause longue durant la simulation; sa durée est comprise entre pause min. et max.<br/>
+            <b>Probabilité inspection longue:</b> probabilité que l'inspecteur inspecte plus long durant la simulation; sa durée est comprise entre pause min. et max.<br/>
             <b>Pause longue min (s):</b> durée minimale de la pause.<br/>
             <b>Pause longue max (s):</b> durée maximale de la pause.
           `;
