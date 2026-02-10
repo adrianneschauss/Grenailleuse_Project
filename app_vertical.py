@@ -4,110 +4,37 @@ import numpy as np
 
 import Parameter_horizontal as Parameter
 from demo_composite_flow_robot import demo_composite_flow
+from sidebar_verticale import build_sidebar
 
 
 st.set_page_config(page_title="Simulateur de Grenailleuse avec Bouteilles en Verticale (avec Robot)", layout="wide")
 st.title("Simulateur de Grenailleuse avec Bouteilles en Verticale (avec Robot)")
 
-st.sidebar.header("Arrivée")
-mean_interval = st.sidebar.number_input(
-    "Intervalle moyen (s)", min_value=0.1, value=float(Parameter.mean_interval), step=1.0
-)
-down_time = st.sidebar.slider(
-    "Probabilité d'arrêt", min_value=0.0, max_value=1.0, value=float(Parameter.down_time)
-)
-min_inter = st.sidebar.number_input(
-    "Interruption min (s)", min_value=0.0, value=float(Parameter.min_iter), step=1.0
-)
-max_inter = st.sidebar.number_input(
-    "Interruption max (s)", min_value=0.0, value=float(Parameter.max_iter), step=1.0
-)
-
-st.sidebar.header("Grenailleuse")
-step_time = st.sidebar.number_input(
-    "Temps de pas (s)", min_value=0.1, value=float(Parameter.step_time), step=1.0
-)
-steps = st.sidebar.number_input(
-    "Nombre d'étapes", min_value=1, value=int(Parameter.steps), step=1
-)
-gr_conv = st.sidebar.number_input(
-    "Déchargement vers convoyeur (s)", min_value=0.0, value=float(Parameter.gr_conv), step=1.0
-)
-variable_speed = st.sidebar.checkbox(
-    "Variation de Vitesse", value=bool(getattr(Parameter, "variable_speed", False))
-)
-
-st.sidebar.header("Convoyeur continu")
-length = st.sidebar.number_input(
-    "Longueur (cm)", min_value=0.1, value=float(Parameter.length), step=0.1
-)
-spacing = st.sidebar.number_input(
-    "Espacement (cm)", min_value=0.1, value=float(Parameter.spacing), step=0.1
-)
-speed = st.sidebar.number_input(
-    "Vitesse (cm/min)", min_value=0.1, value=float(Parameter.speed), step=0.1
-)
-dt = st.sidebar.number_input(
-    "Pas de temps (dt en s)", min_value=0.1, value=float(Parameter.dt), step=0.1
-)
-
-st.sidebar.header("Inspecteur")
-inspect_min = st.sidebar.number_input(
-    "Inspection min (s)", min_value=0.1, value=float(Parameter.inspect_min), step=1.0
-)
-inspect_max = st.sidebar.number_input(
-    "Inspection max (s)", min_value=0.1, value=float(Parameter.inspect_max), step=1.0
-)
-s = st.sidebar.slider(
-    "Probabilité pause longue", min_value=0.0, max_value=1.0, value=float(Parameter.s), step=0.01
-)
-min_long = st.sidebar.slider(
-    "Pause longue min (s)", min_value=0.0, max_value=200.0, value=float(Parameter.min), step=1.0
-)
-max_long = st.sidebar.slider(
-    "Pause longue max (s)", min_value=0.0, max_value=200.0, value=float(Parameter.max), step=1.0
-)
-t_dis = st.sidebar.number_input(
-    "Délai de chargement (s)", min_value=0.0, value=float(Parameter.t_dis2), step=1.0
-)
-t_dis2 = st.sidebar.number_input(
-    "Délai de déchargement (s)", min_value=0.0, value=float(Parameter.t_dis), step=1.0
-)
-
-st.sidebar.header("Lancement")
-env_time = st.sidebar.number_input(
-    "Temps de simulation (s)", min_value=1.0, value=float(Parameter.env_time), step=10.0
-)
-cont_out_capacity = st.sidebar.number_input(
-    "Capacité du tampon avant inspection", min_value=1, value=1, step=1
-)
-sample_time = st.sidebar.number_input(
-    "Temps d'échantillonnage (s)", min_value=0.1, value=1.0, step=0.1
-)
+sidebar = build_sidebar(Parameter)
 
 result = demo_composite_flow(
-    variable_speed=variable_speed,
-    mean_interval=mean_interval,
-    down_time=down_time,
-    min_inter=min_inter,
-    max_inter=max_inter,
-    t_dis=t_dis,
-    t_dis2=t_dis2,
-    inspect_min=inspect_min,
-    inspect_max=inspect_max,
-    max_long=max_long,
-    min_long=min_long,
-    s=s,
-    step_time=step_time,
-    steps=steps,
-    gr_conv=gr_conv,
-    cont_out_capacity=cont_out_capacity,
-    length=length,
-    spacing=spacing,
-    speed=speed,
-    dt=dt,
-    env_time=env_time,
-    sample_time=sample_time,
+    variable_speed=sidebar["variable_speed"],
+    mean_interval=sidebar["mean_interval"],
+    down_time=sidebar["down_time"],
+    min_inter=sidebar["min_inter"],
+    max_inter=sidebar["max_inter"],
+    t_dis=sidebar["t_dis"],
+    t_dis2=sidebar["t_dis2"],
+    inspect_min=sidebar["inspect_min"],
+    inspect_max=sidebar["inspect_max"],
+    max_long=sidebar["max_long"],
+    min_long=sidebar["min_long"],
+    s=sidebar["s"],
+    step_time=sidebar["step_time"],
+    steps=sidebar["steps"],
+    gr_conv=sidebar["gr_conv"],
+    cont_out_capacity=sidebar["cont_out_capacity"],
+    length=sidebar["length"],
+    spacing=sidebar["spacing"],
+    speed=sidebar["speed"],
+    dt=Parameter.dt,
+    env_time=sidebar["env_time"],
+    sample_time=sidebar["sample_time"],
     plot=False,
 )
 
@@ -256,7 +183,7 @@ arrival_times = result["arrival_times"]
 if len(arrival_times) > 1:
     arrival_times_sorted = sorted(arrival_times)
     deltas = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
-    delays = [max(0.0, d - mean_interval) for d in deltas]
+    delays = [max(0.0, d - sidebar["mean_interval"]) for d in deltas]
     fig3, ax3 = plt.subplots(figsize=(6, 4))
     fig3.patch.set_facecolor("black")
     ax3.set_facecolor("black")
@@ -304,7 +231,10 @@ if cont_times and plot_counts:
     fig_occ.patch.set_facecolor("black")
     ax_occ.set_facecolor("black")
     ax_occ.plot(cont_times, plot_counts, linestyle="-", color="#00c8ff", label="Occupation")
-    full_idx = [i for i, c in enumerate(fallback_counts) if c >= cont_out_capacity]
+    full_idx = [
+        i for i, c in enumerate(fallback_counts)
+        if c >= sidebar["cont_out_capacity"]
+    ]
     if full_idx:
         full_t = [cont_times[i] for i in full_idx]
         full_c = [plot_counts[i] for i in full_idx]

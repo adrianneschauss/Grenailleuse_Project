@@ -469,5 +469,6 @@ if sidebar["show_animation"]:
                 st.pyplot(fig_anim)
             else:
                 components.html(html, height=height, width=1000, scrolling=True)
+        plt.close(fig_anim)
     else:
         st.info("Animation indisponible : aucune position enregistrée.")
