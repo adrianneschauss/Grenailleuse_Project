@@ -45,6 +45,9 @@ steps = st.sidebar.number_input(
 gr_conv = st.sidebar.number_input(
     "Déchargement vers convoyeur (s)", min_value=0.0, value=to_float(Parameter.gr_conv), step=1.0
 )
+variable_speed = st.sidebar.checkbox(
+    "Variation de Vitesse", value=bool(getattr(Parameter, "variable_speed", False))
+)
 
 st.sidebar.header("Convoyeur horizontal variable")
 horizontal_spacing = st.sidebar.number_input(
@@ -125,6 +128,7 @@ animation_mode = st.sidebar.selectbox(
 show_static_preview = st.sidebar.checkbox("Aperçu statique", value=True)
 
 result = demo_composite_flow(
+    variable_speed=variable_speed,
     mean_interval=mean_interval,
     down_time=down_time,
     min_inter=min_inter,
@@ -165,17 +169,16 @@ cont_time_total = float(result.get("cont_time_total", 0.0))
 busy_time = float(result.get("busy_time", 0.0))
 blocked_time = float(result.get("grenailleuse_blocked_time", 0.0))
 def pct(value, total):
-    return np.round((value * 100.0 / total), 3) if total else 0.0
-st.write(
-    {
-        "Inspectées": len(result["inspected_times"]),
-        "Temps total": total_time,
-        "% temps pas a pas": pct(step_time_total, total_time),
-        "% temps continu": pct(cont_time_total, total_time),
-        "% temps d'occupation inspecteur": pct(busy_time, total_time),
-        "% temps arret de grenailleuse": pct(blocked_time, total_time),
-    }
-)
+    return np.round((value * 100.0 / total), 2) if total else 0.0
+resume_rows = [
+    {"Metric": "Inspectées", "Valeur": len(result["inspected_times"])},
+    {"Metric": "Temps total (s)", "Valeur": np.round(total_time, 2)},
+    {"Metric": "% temps pas a pas", "Valeur": pct(step_time_total, total_time)},
+    {"Metric": "% temps continu", "Valeur": pct(cont_time_total, total_time)},
+    {"Metric": "% temps d'occupation inspecteur", "Valeur": pct(busy_time, total_time)},
+    {"Metric": "% temps arret de grenailleuse", "Valeur": pct(blocked_time, total_time)},
+]
+st.table(resume_rows)
 
 inspected_times = result["inspected_times"]
 if inspected_times:

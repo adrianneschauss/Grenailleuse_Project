@@ -33,6 +33,9 @@ steps = st.sidebar.number_input(
 gr_conv = st.sidebar.number_input(
     "Déchargement vers convoyeur (s)", min_value=0.0, value=float(Parameter.gr_conv), step=1.0
 )
+variable_speed = st.sidebar.checkbox(
+    "Variation de Vitesse", value=bool(getattr(Parameter, "variable_speed", False))
+)
 
 st.sidebar.header("Convoyeur continu")
 length = st.sidebar.number_input(
@@ -83,6 +86,7 @@ sample_time = st.sidebar.number_input(
 )
 
 result = demo_composite_flow(
+    variable_speed=variable_speed,
     mean_interval=mean_interval,
     down_time=down_time,
     min_inter=min_inter,
@@ -108,14 +112,13 @@ result = demo_composite_flow(
 )
 
 st.subheader("Résumé")
-st.write(
-    {
-        "Inspectées": len(result["inspected_times"]),
-        "Temps occupation": np.round(float(result["busy_time"]),2),
-        "Temps total": result["total_time"],
-        "% du temps occupé" : np.round(float(result["busy_time"]*100/result["total_time"]),3)
-    }
-)
+resume_rows = [
+    {"Metric": "Inspectées", "Valeur": len(result["inspected_times"])},
+    {"Metric": "Temps occupation (s)", "Valeur": np.round(float(result["busy_time"]), 2)},
+    {"Metric": "Temps total (s)", "Valeur": np.round(float(result["total_time"]), 2)},
+    {"Metric": "% du temps occupé", "Valeur": np.round(float(result["busy_time"] * 100 / result["total_time"]), 2)},
+]
+st.table(resume_rows)
 
 inspected_times = result["inspected_times"]
 if inspected_times:
