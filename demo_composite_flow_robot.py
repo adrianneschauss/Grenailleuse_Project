@@ -111,6 +111,11 @@ def demo_composite_flow(
     env.process(robot_process(env, robot=connector_robot, input_store=step_g["output_store"], robot_time=3, moved_times=robot_times,
                                busy_time= busyR_time, output_store=cont_outR))
 
+    cont_items_state = {"items": []}
+
+    def cont_position_logger(now, segment_id, items, segment_length=None):
+        cont_items_state["items"] = list(items)
+
     env.process(
         continuous_conveyor(
             env,
@@ -121,6 +126,7 @@ def demo_composite_flow(
             spacing=spacing,
             out_store=cont_out,
             exit_times=conveyor_exit_times,
+            position_logger=cont_position_logger,
         )
     )
 
@@ -169,6 +175,7 @@ def demo_composite_flow(
         "t": [],
         "cont_outR": [],
         "cont_out": [],
+        "cont_items": [],
         "inspect_buffer": [],
         "post_inspect": [],
         "inspector_busy": [],
@@ -243,6 +250,7 @@ def demo_composite_flow(
             monitor["t"].append(env.now)
             monitor["cont_outR"].append(len(cont_outR.items))
             monitor["cont_out"].append(len(cont_out.items))
+            monitor["cont_items"].append(len(cont_items_state["items"]))
             monitor["inspect_buffer"].append(len(inspect_buffer.items))
             monitor["post_inspect"].append(len(post_inspect.items))
             monitor["inspector_busy"].append(inspector.count)

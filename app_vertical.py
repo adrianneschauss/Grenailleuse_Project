@@ -112,11 +112,16 @@ result = demo_composite_flow(
 )
 
 st.subheader("Résumé")
+total_time = float(result.get("total_time", 0.0))
+busy_time = float(result.get("busy_time", 0.0))
+blocked_time = float(result.get("grenailleuse_blocked_time", 0.0))
+def pct(value, total):
+    return np.round((value * 100.0 / total), 2) if total else 0.0
 resume_rows = [
-    {"Metric": "Inspectées", "Valeur": len(result["inspected_times"])},
-    {"Metric": "Temps occupation (s)", "Valeur": np.round(float(result["busy_time"]), 2)},
-    {"Metric": "Temps total (s)", "Valeur": np.round(float(result["total_time"]), 2)},
-    {"Metric": "% du temps occupé", "Valeur": np.round(float(result["busy_time"] * 100 / result["total_time"]), 2)},
+    {"Metric": "Inspectées", "Valeur": np.round(float(len(result["inspected_times"])), 2)},
+    {"Metric": "Temps total (s)", "Valeur": np.round(total_time, 2)},
+    {"Metric": "% temps d'occupation inspecteur", "Valeur": pct(busy_time, total_time)},
+    {"Metric": "% temps arret de grenailleuse", "Valeur": pct(blocked_time, total_time)},
 ]
 st.table(resume_rows)
 
@@ -291,13 +296,34 @@ else:
 
 st.subheader("Occupation du convoyeur continu")
 cont_times = monitor.get("t", [])
-cont_counts = monitor.get("cont_out", [])
-if cont_times and cont_counts:
-    fig_occ, ax_occ = plt.subplots()
-    ax_occ.plot(cont_times, cont_counts, linestyle="-")
-    ax_occ.set_xlabel("Temps")
-    ax_occ.set_ylabel("Bouteilles")
-    ax_occ.set_title("Occupation du convoyeur continu dans le temps")
+cont_counts = monitor.get("cont_items", [])
+fallback_counts = monitor.get("cont_out", [])
+plot_counts = cont_counts if cont_counts else fallback_counts
+if cont_times and plot_counts:
+    fig_occ, ax_occ = plt.subplots(figsize=(6, 4))
+    fig_occ.patch.set_facecolor("black")
+    ax_occ.set_facecolor("black")
+    ax_occ.plot(cont_times, plot_counts, linestyle="-", color="#00c8ff", label="Occupation")
+    full_idx = [i for i, c in enumerate(fallback_counts) if c >= cont_out_capacity]
+    if full_idx:
+        full_t = [cont_times[i] for i in full_idx]
+        full_c = [plot_counts[i] for i in full_idx]
+        ax_occ.plot(
+            full_t,
+            full_c,
+            linestyle="None",
+            marker="o",
+            color="#ff9f1a",
+            label="Tampon plein",
+        )
+    ax_occ.set_xlabel("Temps", color="white")
+    ax_occ.set_ylabel("Bouteilles", color="white")
+    ax_occ.set_title("Occupation du convoyeur continu dans le temps", color="white")
+    ax_occ.tick_params(colors="white")
+    for spine in ax_occ.spines.values():
+        spine.set_color("white")
+    ax_occ.grid(True, color="#444444", alpha=0.6)
+    ax_occ.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     st.pyplot(fig_occ)
 else:
     st.info("Pas assez de données pour l'occupation du convoyeur continu.")
