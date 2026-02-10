@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 60*60*2
+env_time = 2000
 
 #57600
 
