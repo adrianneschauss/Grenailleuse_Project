@@ -10,156 +10,47 @@ mpl.rcParams["animation.embed_limit"] = 200
 
 import Parameter_horizontal as Parameter
 from demo_variable_conveyor_tempon import demo_composite_flow
-
-
-def to_float(value):
-    if isinstance(value, tuple):
-        return float("".join(str(part) for part in value))
-    return float(value)
+from sidebar_tempon import build_sidebar
 
 
 st.set_page_config(page_title="Simulateur de Grenailleuse Variable (Horizontal) avec Tampon", layout="wide")
 st.title("Simulateur de Grenailleuse Variable (Horizontal) avec Tampon")
 
-st.sidebar.header("Arrivée")
-mean_interval = st.sidebar.number_input(
-    "Intervalle moyen (s)", min_value=0.1, value=to_float(Parameter.mean_interval), step=1.0
-)
-down_time = st.sidebar.slider(
-    "Probabilité d'arrêt", min_value=0.0, max_value=1.0, value=to_float(Parameter.down_time)
-)
-min_inter = st.sidebar.number_input(
-    "Interruption min (s)", min_value=0.0, value=to_float(Parameter.min_iter), step=1.0
-)
-max_inter = st.sidebar.number_input(
-    "Interruption max (s)", min_value=0.0, value=to_float(Parameter.max_iter), step=1.0
-)
-
-st.sidebar.header("Grenailleuse")
-step_time = st.sidebar.number_input(
-    "Temps de pas (s)", min_value=0.1, value=to_float(Parameter.step_time), step=1.0
-)
-steps = st.sidebar.number_input(
-    "Nombre d'étapes", min_value=1, value=int(to_float(Parameter.steps)), step=1
-)
-gr_conv = st.sidebar.number_input(
-    "Déchargement vers convoyeur (s)", min_value=0.0, value=to_float(Parameter.gr_conv), step=1.0
-)
-variable_speed = st.sidebar.checkbox(
-    "Variation de Vitesse", value=bool(getattr(Parameter, "variable_speed", False))
-)
-
-st.sidebar.header("Convoyeur horizontal variable")
-horizontal_spacing = st.sidebar.number_input(
-    "Espacement horizontal (cm)", min_value=0.1, value=to_float(Parameter.horizontal_spacing), step=0.1
-)
-vertical_spacing = st.sidebar.number_input(
-    "Espacement vertical (cm)", min_value=0.1, value=to_float(Parameter.vertical_spacing), step=0.1
-)
-second_speed = st.sidebar.number_input(
-    "Vitesse convoyeur (cm/s)", min_value=0.1, value=to_float(Parameter.second_speed), step=0.1
-)
-dt = st.sidebar.number_input(
-    "Pas de temps (dt en s)", min_value=0.1, value=to_float(Parameter.dt), step=0.1
-)
-mode_switch_delay = st.sidebar.number_input(
-    "Délai changement mode (s)", min_value=0.0, value=to_float(Parameter.mode_switch_delay), step=0.1
-)
-
-st.sidebar.header("Paramètres convoyeur variable")
-det_hold_time = st.sidebar.number_input(
-    "Temps déclenchement détecteurs (s)", min_value=0.0, value=to_float(Parameter.det_hold_time), step=0.1
-)
-step_time_2 = st.sidebar.number_input(
-    "Temps de pas variable (s)", min_value=0.1, value=to_float(Parameter.step_time_2), step=0.1
-)
-length_first = st.sidebar.number_input(
-    "Longueur convoyeur 1 (cm)", min_value=0.1, value=to_float(Parameter.length_first), step=0.1
-)
-length_second = st.sidebar.number_input(
-    "Longueur convoyeur 2 (cm)", min_value=0.1, value=to_float(Parameter.length_second), step=0.1
-)
-length_third = st.sidebar.number_input(
-    "Longueur convoyeur 3 (cm)", min_value=0.1, value=to_float(Parameter.length_third), step=0.1
-)
-
-st.sidebar.header("Inspecteur")
-inspect_min = st.sidebar.number_input(
-    "Inspection min (s)", min_value=0.1, value=to_float(Parameter.inspect_min), step=1.0
-)
-inspect_max = st.sidebar.number_input(
-    "Inspection max (s)", min_value=0.1, value=to_float(Parameter.inspect_max), step=1.0
-)
-s = st.sidebar.slider(
-    "Probabilité pause longue", min_value=0.0, max_value=1.0, value=float(Parameter.s), step=0.01
-)
-min_long = st.sidebar.slider(
-    "Pause longue min (s)", min_value=0.0, max_value=200.0, value=float(Parameter.min), step=1.0
-)
-max_long = st.sidebar.slider(
-    "Pause longue max (s)", min_value=0.0, max_value=200.0, value=float(Parameter.max), step=1.0
-)
-t_dis = st.sidebar.number_input(
-    "Délai de chargement (s)", min_value=0.0, value=to_float(Parameter.t_dis2), step=1.0
-)
-t_dis2 = st.sidebar.number_input(
-    "Délai de déchargement (s)", min_value=0.0, value=to_float(Parameter.t_dis), step=1.0
-)
-
-st.sidebar.header("Lancement")
-env_time = st.sidebar.number_input(
-    "Temps de simulation (s)", min_value=1.0, value=to_float(Parameter.env_time), step=10.0
-)
-cont_out_capacity = st.sidebar.number_input(
-    "Capacité du tampon avant inspection", min_value=1, value=1, step=1
-)
-sample_time = st.sidebar.number_input(
-    "Temps d'échantillonnage (s)", min_value=0.1, value=1.0, step=0.1
-)
-show_animation = st.sidebar.checkbox("Afficher animation", value=True)
-animation_interval_ms = st.sidebar.number_input(
-    "Animation interval (ms)", min_value=10, value=50, step=10
-)
-animation_mode = st.sidebar.selectbox(
-    "Mode animation",
-    ["Auto", "Interactif", "Statique"],
-    index=0,
-)
-show_static_preview = st.sidebar.checkbox("Aperçu statique", value=True)
+sidebar = build_sidebar(Parameter)
 
 result = demo_composite_flow(
-    variable_speed=variable_speed,
-    mean_interval=mean_interval,
-    down_time=down_time,
-    min_inter=min_inter,
-    max_inter=max_inter,
-    t_dis=t_dis,
-    t_dis2=t_dis2,
-    inspect_min=inspect_min,
-    inspect_max=inspect_max,
-    max_long=max_long,
-    min_long=min_long,
-    s=s,
-    step_time=step_time,
-    step_time_2=step_time_2,
-    steps=steps,
-    gr_conv=gr_conv,
-    cont_out_capacity=cont_out_capacity,
-    length=length_second,
-    length_first=length_first,
-    length_second=length_second,
-    length_third=length_third,
-    spacing=horizontal_spacing,
-    horizontal_spacing=horizontal_spacing,
-    vertical_spacing=vertical_spacing,
-    speed=second_speed,
-    second_speed=second_speed,
-    dt=dt,
-    env_time=env_time,
-    sample_time=sample_time,
+    variable_speed=sidebar["variable_speed"],
+    mean_interval=sidebar["mean_interval"],
+    down_time=sidebar["down_time"],
+    min_inter=sidebar["min_inter"],
+    max_inter=sidebar["max_inter"],
+    t_dis=sidebar["t_dis"],
+    t_dis2=sidebar["t_dis2"],
+    inspect_min=sidebar["inspect_min"],
+    inspect_max=sidebar["inspect_max"],
+    max_long=sidebar["max_long"],
+    min_long=sidebar["min_long"],
+    s=sidebar["s"],
+    step_time=sidebar["step_time"],
+    step_time_2=sidebar["step_time_2"],
+    steps=sidebar["steps"],
+    gr_conv=sidebar["gr_conv"],
+    cont_out_capacity=sidebar["cont_out_capacity"],
+    length=sidebar["length_second"],
+    length_first=sidebar["length_first"],
+    length_second=sidebar["length_second"],
+    length_third=sidebar["length_third"],
+    spacing=sidebar["horizontal_spacing"],
+    horizontal_spacing=sidebar["horizontal_spacing"],
+    vertical_spacing=sidebar["vertical_spacing"],
+    speed_tempon=sidebar["speed_tempon"],
+    first_speed=sidebar["first_speed"],
+    second_speed=sidebar["second_speed"],
+    env_time=sidebar["env_time"],
+    sample_time=sidebar["sample_time"],
     plot=False,
-    mode_switch_delay=mode_switch_delay,
-    det_hold_time=det_hold_time,
+    mode_switch_delay=sidebar["mode_switch_delay"],
+    det_hold_time=sidebar["det_hold_time"],
 )
 
 st.subheader("Résumé")
@@ -314,7 +205,7 @@ arrival_times = result["arrival_times"]
 if len(arrival_times) > 1:
     arrival_times_sorted = sorted(arrival_times)
     deltas = [arrival_times_sorted[i] - arrival_times_sorted[i - 1] for i in range(1, len(arrival_times_sorted))]
-    delays = [max(0.0, d - mean_interval) for d in deltas]
+    delays = [max(0.0, d - sidebar["mean_interval"]) for d in deltas]
     fig3, ax3 = plt.subplots(figsize=(6, 4))
     fig3.patch.set_facecolor("black")
     ax3.set_facecolor("black")
@@ -373,7 +264,7 @@ if times and positions:
 else:
     st.info("Pas assez de données pour l'occupation du convoyeur variable.")
 
-if show_animation:
+if sidebar["show_animation"]:
     if times and positions:
         cont_positions = position_log.get("cont_positions", [])
         pre_positions = position_log.get("pre_positions", [])
@@ -381,10 +272,10 @@ if show_animation:
         step_log = result.get("step_position_log", {})
 
         show_step = bool(step_log.get("t"))
-        cont_out_length = length_third
+        cont_out_length = sidebar["length_third"]
         box_size = 0.6
-        buffer_x = cont_out_length + horizontal_spacing * 0.4
-        inspector_x = cont_out_length + horizontal_spacing * 1.1
+        buffer_x = cont_out_length + sidebar["horizontal_spacing"] * 0.4
+        inspector_x = cont_out_length + sidebar["horizontal_spacing"] * 1.1
 
         if show_step:
             fig_anim, (ax_step, ax_pre, ax_var, ax_cont) = plt.subplots(
@@ -397,7 +288,7 @@ if show_animation:
             ax_step = None
 
         if show_step:
-            slot_count = steps
+            slot_count = sidebar["steps"]
             slot_size = 1.0
             total_length = slot_count * slot_size
             ax_step.set_xlim(-0.5, total_length + 0.5)
@@ -420,29 +311,29 @@ if show_animation:
             ax_step.text(0, 0.4, "Entry", ha="left", va="bottom", fontsize=9)
             ax_step.text(total_length, 0.4, "Exit", ha="right", va="bottom", fontsize=9)
 
-        ax_pre.set_xlim(-vertical_spacing, length_first + vertical_spacing)
+        ax_pre.set_xlim(-sidebar["vertical_spacing"], sidebar["length_first"] + sidebar["vertical_spacing"])
         ax_pre.set_ylim(-1, 1.5)
         ax_pre.set_yticks([])
         ax_pre.set_xlabel("Pre-variable conveyor position")
-        ax_pre.hlines(0, 0, length_first, color="black", linewidth=2)
+        ax_pre.hlines(0, 0, sidebar["length_first"], color="black", linewidth=2)
         ax_pre.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
-        ax_pre.vlines(length_first, -0.2, 0.2, color="tab:red", linewidth=2)
+        ax_pre.vlines(sidebar["length_first"], -0.2, 0.2, color="tab:red", linewidth=2)
         ax_pre.text(0, 0.35, "Grenailleuse out", ha="left", va="bottom", fontsize=9)
-        ax_pre.text(length_first, 0.35, "Variable in", ha="right", va="bottom", fontsize=9)
+        ax_pre.text(sidebar["length_first"], 0.35, "Variable in", ha="right", va="bottom", fontsize=9)
 
-        ax_var.set_xlim(-horizontal_spacing, length_second + horizontal_spacing)
+        ax_var.set_xlim(-sidebar["horizontal_spacing"], sidebar["length_second"] + sidebar["horizontal_spacing"])
         ax_var.set_ylim(-1, 1.5)
         ax_var.set_yticks([])
         ax_var.set_xlabel("Variable conveyor position")
         ax_var.set_title("Variable + Continuous Conveyor Bottle Movement")
 
-        ax_var.hlines(0, 0, length_second, color="black", linewidth=2)
+        ax_var.hlines(0, 0, sidebar["length_second"], color="black", linewidth=2)
         ax_var.vlines(0, -0.2, 0.2, color="tab:green", linewidth=2)
-        ax_var.vlines(length_second, -0.2, 0.2, color="tab:red", linewidth=2)
+        ax_var.vlines(sidebar["length_second"], -0.2, 0.2, color="tab:red", linewidth=2)
         ax_var.text(0, 0.35, "Step G exit", ha="left", va="bottom", fontsize=9)
-        ax_var.text(length_second, 0.35, "Variable end", ha="right", va="bottom", fontsize=9)
+        ax_var.text(sidebar["length_second"], 0.35, "Variable end", ha="right", va="bottom", fontsize=9)
 
-        ax_cont.set_xlim(-horizontal_spacing, cont_out_length + horizontal_spacing * 2.0)
+        ax_cont.set_xlim(-sidebar["horizontal_spacing"], cont_out_length + sidebar["horizontal_spacing"] * 2.0)
         ax_cont.set_ylim(-1, 1.5)
         ax_cont.set_yticks([])
         ax_cont.set_xlabel("Continuous conveyor position")
@@ -550,7 +441,7 @@ if show_animation:
                 scat_handoff.set_offsets(np.empty((0, 2)))
             return (scat_step, scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff) if show_step else (scat_pre, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff)
 
-        if show_static_preview and frame_indices:
+        if sidebar["show_static_preview"] and frame_indices:
             preview_idx = frame_indices[-1]
             update_anim(preview_idx)
             st.pyplot(fig_anim)
@@ -560,7 +451,7 @@ if show_animation:
             update_anim,
             frames=frame_indices,
             init_func=init_anim,
-            interval=animation_interval_ms,
+            interval=sidebar["animation_interval_ms"],
             blit=False,
         )
         html = anim.to_jshtml()
@@ -568,9 +459,9 @@ if show_animation:
             height = 1250
         else:
             height = 900
-        if animation_mode == "Statique":
+        if sidebar["animation_mode"] == "Statique":
             st.pyplot(fig_anim)
-        elif animation_mode == "Interactif":
+        elif sidebar["animation_mode"] == "Interactif":
             components.html(html, height=height, width=1000, scrolling=True)
         else:
             if len(html) > 5_000_000:

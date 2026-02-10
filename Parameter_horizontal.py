@@ -46,6 +46,7 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 7
 
+speed_tempon = 13
 first_speed = 12
 second_speed = 13
 

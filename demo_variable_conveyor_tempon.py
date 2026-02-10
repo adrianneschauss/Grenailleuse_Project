@@ -41,6 +41,7 @@ def demo_composite_flow(
     horizontal_spacing=None,
     vertical_spacing = None,
     speed=None,
+    speed_tempon = None,
     first_speed=None,
     second_speed=None,
     dt=None,
@@ -98,6 +99,8 @@ def demo_composite_flow(
         horizontal_spacing = Parameter_horizontal.horizontal_spacing
     if vertical_spacing is None:
         vertical_spacing = Parameter_horizontal.vertical_spacing
+    if speed_tempon is None:
+        speed_tempon = Parameter_horizontal.speed_tempon
     if first_speed is None:
         first_speed = Parameter_horizontal.first_speed
     if second_speed is None:
@@ -171,7 +174,7 @@ def demo_composite_flow(
         continuous_conveyor(
             env,
             length=length_first,
-            speed=12,
+            speed=speed_tempon,
             dt=dt,
             input_store=step_g["output_store"],
             spacing=vertical_spacing,
