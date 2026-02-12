@@ -44,9 +44,9 @@ def sweep(fn, p_vals, s_vals, n_runs, seed_base):
     return bottles_grid, blocked_grid, busy_grid
 
 
-def plot_contours(x, y, z, title, cbar_label, ax):
+def plot_contours(x, y, z, title, cbar_label, ax, vmin=None, vmax=None):
     levels = 12
-    contour = ax.contourf(x, y, z, levels=levels, cmap="viridis")
+    contour = ax.contourf(x, y, z, levels=levels, cmap="viridis", vmin=vmin, vmax=vmax)
     ax.set_title(title)
     ax.set_xlabel("Probabilité interruption")
     ax.set_ylabel("Probabilité inspection longue")
@@ -65,18 +65,28 @@ def main():
     X, Y = np.meshgrid(p_vals, s_vals)
 
     fig, axes = plt.subplots(3, 2, figsize=(11, 11), constrained_layout=True)
+    bottles_min = float(min(np.min(bottles_variable), np.min(bottles_tempon)))
+    bottles_max = float(max(np.max(bottles_variable), np.max(bottles_tempon)))
+    blocked_min = float(min(np.min(blocked_variable), np.min(blocked_tempon)))
+    blocked_max = float(max(np.max(blocked_variable), np.max(blocked_tempon)))
+    busy_min = float(min(np.min(busy_variable), np.min(busy_tempon)))
+    busy_max = float(max(np.max(busy_variable), np.max(busy_tempon)))
     # Row 1: Bottles
     plot_contours(
         X, Y, bottles_variable,
         "Variable - Bouteilles inspectées (moyenne)",
         "Bouteilles",
         axes[0, 0],
+        vmin=bottles_min,
+        vmax=bottles_max,
     )
     plot_contours(
         X, Y, bottles_tempon,
         "Tampon - Bouteilles inspectées (moyenne)",
         "Bouteilles",
         axes[0, 1],
+        vmin=bottles_min,
+        vmax=bottles_max,
     )
     # Row 2: Grenailleuse stop %
     plot_contours(
@@ -84,12 +94,16 @@ def main():
         "Variable - Temps d'arrêt grenailleuse (%)",
         "% arrêt",
         axes[1, 0],
+        vmin=blocked_min,
+        vmax=blocked_max,
     )
     plot_contours(
         X, Y, blocked_tempon,
         "Tampon - Temps d'arrêt grenailleuse (%)",
         "% arrêt",
         axes[1, 1],
+        vmin=blocked_min,
+        vmax=blocked_max,
     )
     # Row 3: Inspector busy %
     plot_contours(
@@ -97,12 +111,16 @@ def main():
         "Variable - Temps occupation inspecteur (%)",
         "% occupé",
         axes[2, 0],
+        vmin=busy_min,
+        vmax=busy_max,
     )
     plot_contours(
         X, Y, busy_tempon,
         "Tampon - Temps occupation inspecteur (%)",
         "% occupé",
         axes[2, 1],
+        vmin=busy_min,
+        vmax=busy_max,
     )
 
     out_path = "sweep_contours_tempon_variable.png"

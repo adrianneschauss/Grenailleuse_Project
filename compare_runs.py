@@ -58,14 +58,14 @@ def one_decimal(value):
 
 
 def main():
-    n_runs = 10
+    n_runs = 4
     results = [
         run_n("Verticale", lambda **kwargs: run_robot(variable_speed=False, **kwargs), n_runs),
-        run_n("Horizontale (sans tampon) ", lambda **kwargs: run_variable(variable_speed=False, **kwargs), n_runs),
+        run_n("Horizontale (sans tampon)", lambda **kwargs: run_variable(variable_speed=False, **kwargs), n_runs),
         run_n("Horizontale avec tampon", lambda **kwargs: run_tempon(variable_speed=False, **kwargs), n_runs),
         run_n("Verticale avec Vitesse Variable (Grenailleuse)", lambda **kwargs: run_robot(variable_speed=True, **kwargs), n_runs),
         run_n("Horizontale (sans tampon) avec Vitesse Variable (Grenailleuse)", lambda **kwargs: run_variable(variable_speed=True, **kwargs), n_runs),
-        run_n("Horizontale avec tampon et avec Vitesse Variable (Grenailleuse)", lambda **kwargs: run_tempon(variable_speed=True, **kwargs), n_runs),
+        run_n("Horizontale avec tampon et Vitesse Variable (Grenailleuse)", lambda **kwargs: run_tempon(variable_speed=True, **kwargs), n_runs),
     ]
 
     for row in results:
@@ -77,18 +77,28 @@ def main():
         ):
             row[key] = one_decimal(row[key])
 
+    display_headers = [
+        "Cas",
+        "Occupation inspecteur (%)",
+        "Arrêt grenailleuse (%)",
+        "Bouteilles inspectées",
+        "Temps pas à pas (%)",
+        "Temps continu (%)",
+    ]
+    display_rows = []
+    for row in results:
+        display_rows.append(
+            {
+                "Cas": row["case"],
+                "Occupation inspecteur (%)": row["busy_time_mean"],
+                "Arrêt grenailleuse (%)": row["blocked_time_mean"],
+                "Bouteilles inspectées": row["bottles_mean"],
+                "Temps pas à pas (%)": row["step_time_mean"],
+                "Temps continu (%)": row["cont_time_mean"],
+            }
+        )
     print("=== Résultats moyens (n=10) ===")
-    print_table(
-        results,
-        [
-            "case",
-            "busy_time_mean",
-            "blocked_time_mean",
-            "bottles_mean",
-            "step_time_mean",
-            "cont_time_mean",
-        ],
-    )
+    print_table(display_rows, display_headers)
 
     params_common = [
         ("Intervalle moyen (s)", P.mean_interval),

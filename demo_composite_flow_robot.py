@@ -2,7 +2,6 @@ import random
 import numpy as np
 import simpy
 import matplotlib.pyplot as plt
-from simpy_objects import Conveyor
 import Parameter_horizontal
 from functions import create_step_conveyor, arrival_process, _buffer_get, _buffer_has_space, _buffer_put, load_step_conveyor, robot_process, inspect_time, inspector_process, unload_delay, step_conveyor_advance, continuous_conveyor, continuous_conveyor_simple
 
@@ -30,6 +29,8 @@ def demo_composite_flow(
     env_time=None,
     sample_time=1.0,
     det_hold_time=None,
+    p_buffer_capacity=None,
+    pre_step_buffer_capacity=None,
     plot=True,
 ):
     env = simpy.Environment()
@@ -77,8 +78,13 @@ def demo_composite_flow(
         env_time = Parameter_horizontal.env_time
     if det_hold_time is None:
         det_hold_time = Parameter_horizontal.det_hold_time
+    if p_buffer_capacity is None:
+        p_buffer_capacity = 10
+    if pre_step_buffer_capacity is None:
+        pre_step_buffer_capacity = 1
 
-    p_buffer = Conveyor(env, "P_buffer", conveyor_speed=1, init_load=0, max_load=10)
+    p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
+    pre_step_buffer = simpy.Store(env, capacity=pre_step_buffer_capacity)
     step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
     
     cont_out = simpy.Store(env, capacity=cont_out_capacity)
@@ -101,14 +107,27 @@ def demo_composite_flow(
     )
     grenailleuse_exit_times = []
     conveyor_exit_times = []
-    env.process(load_step_conveyor(env, p_buffer, step_g))
+
+    def feed_pre_step():
+        while True:
+            yield _buffer_get(p_buffer)
+            placed = False
+            while not placed:
+                if _buffer_has_space(pre_step_buffer):
+                    yield _buffer_put(pre_step_buffer)
+                    placed = True
+                else:
+                    yield env.timeout(0.01)
+
+    env.process(feed_pre_step())
+    env.process(load_step_conveyor(env, pre_step_buffer, step_g))
     grenailleuse_blocked_time = [0.0]
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time))
 
     robot_times = []
     busyR_time = [0.0]
     
-    env.process(robot_process(env, robot=connector_robot, input_store=step_g["output_store"], robot_time=3, moved_times=robot_times,
+    env.process(robot_process(env, robot=connector_robot, input_store=step_g["output_store"], robot_time=5, moved_times=robot_times,
                                busy_time= busyR_time, output_store=cont_outR))
 
     cont_items_state = {"items": []}
@@ -209,32 +228,48 @@ def demo_composite_flow(
 
     def grenailleuse_speed_controller(
         control_dt=1.0,
-        window_s=30.0,
-        slow_ratio=0.7,
-        fast_ratio=0.2,
-        streak_required=3,
-        slow_factor=1.1,
-        fast_factor=0.9,
+        window_s=20.0,
+        slow_band=0.60,
+        fast_band=0.30,
+        streak_required=4,
+        slow_factor=1.03,
+        fast_factor=0.98,
     ):
         from collections import deque
         window_len = max(1, int(window_s / control_dt))
-        slow_window = deque(maxlen=window_len)
-        fast_window = deque(maxlen=window_len)
+        pressure_window = deque(maxlen=window_len)
         slow_streak = 0
         fast_streak = 0
         base_step = step_g["step_time"]
-        min_step = base_step * 0.5
-        max_step = base_step * 2.0
+        min_step = base_step * 0.8
+        max_step = base_step * 1.4
+        step_out_cap = max(1, step_g["output_store"].capacity)
+        cont_outr_cap = max(1, cont_outR.capacity)
+        cont_out_cap = max(1, cont_out.capacity)
+        inspect_cap = max(1, inspect_buffer.capacity)
         while True:
-            d1 = det_state["det1"]
-            d2 = det_state["det2"]
-            d3 = det_state["det3"]
-            slow_window.append(1 if (d1 and d2 and d3) else 0)
-            fast_window.append(1 if (d1 and d2) else 0)
-            slow_ratio_now = sum(slow_window) / len(slow_window)
-            fast_ratio_now = sum(fast_window) / len(fast_window)
-            slow_streak = slow_streak + 1 if slow_ratio_now >= slow_ratio else 0
-            fast_streak = fast_streak + 1 if fast_ratio_now <= fast_ratio else 0
+            step_out_fill = len(step_g["output_store"].items) / step_out_cap
+            robot_out_fill = len(cont_outR.items) / cont_outr_cap
+            conv_out_fill = len(cont_out.items) / cont_out_cap
+            inspect_fill = len(inspect_buffer.items) / inspect_cap
+            downstream_pressure = (
+                0.35 * step_out_fill
+                + 0.30 * robot_out_fill
+                + 0.20 * conv_out_fill
+                + 0.15 * inspect_fill
+            )
+            pressure_window.append(downstream_pressure)
+            pressure_avg = sum(pressure_window) / len(pressure_window)
+            upstream_backlog = bool(p_buffer.items or pre_step_buffer.items)
+            if pressure_avg >= slow_band:
+                slow_streak += 1
+                fast_streak = 0
+            elif pressure_avg <= fast_band and upstream_backlog:
+                fast_streak += 1
+                slow_streak = 0
+            else:
+                slow_streak = 0
+                fast_streak = 0
             if slow_streak >= streak_required:
                 step_g["step_time"] = min(step_g["step_time"] * slow_factor, max_step)
                 slow_streak = 0

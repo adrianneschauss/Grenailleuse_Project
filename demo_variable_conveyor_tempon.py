@@ -10,6 +10,9 @@ from functions import (
     load_step_conveyor,
     step_conveyor_advance,
     continuous_conveyor,
+    _buffer_get,
+    _buffer_has_space,
+    _buffer_put,
     inspector_process,
     unload_delay,
     inspect_time
@@ -119,6 +122,7 @@ def demo_composite_flow(
     if p_buffer_capacity is None:
         p_buffer_capacity = 1
     p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
+    pre_step_buffer = simpy.Store(env, capacity=40)
 #____
 # first step conveyor (grenailleuse)
     step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
@@ -140,7 +144,19 @@ def demo_composite_flow(
         )
     )
 
-    env.process(load_step_conveyor(env, p_buffer, step_g))
+    def feed_pre_step():
+        while True:
+            yield _buffer_get(p_buffer)
+            placed = False
+            while not placed:
+                if _buffer_has_space(pre_step_buffer):
+                    yield _buffer_put(pre_step_buffer)
+                    placed = True
+                else:
+                    yield env.timeout(0.01)
+
+    env.process(feed_pre_step())
+    env.process(load_step_conveyor(env, pre_step_buffer, step_g))
     grenailleuse_blocked_time = [0.0]
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time)) 
     # downstream chain: pre-variable continuous conveyor -> variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector
@@ -349,35 +365,86 @@ def demo_composite_flow(
                         cont_end_state["active"] = 1
                         break
             yield env.timeout(dt)
+# def grenailleuse_speed_controller(
+#         control_dt=1.0,
+#         window_s=30.0,
+#         slow_ratio=0.7,
+#         fast_ratio=0.05,
+#         streak_required=10,
+#         slow_factor=1.1,
+#         fast_factor=0.97,
+#     ):
+#         from collections import deque
+#         window_len = max(1, int(window_s / control_dt))
+#         slow_window = deque(maxlen=window_len)
+#         fast_window = deque(maxlen=window_len)
+#         slow_streak = 0
+#         fast_streak = 0
+#         base_step = step_g["step_time"]
+#         min_step = base_step * 0.5
+#         max_step = base_step * 2
+#         while True:
+#             d1 = det_state["det1"]
+#             d2 = det_state["det2"]
+#             d3 = det_state["det3"]
+#             slow_window.append(1 if (d1 ) else 0)
+#             fast_window.append(1 if (d1 and d2) else 0)
+#             slow_ratio_now = sum(slow_window) / len(slow_window)
+#             fast_ratio_now = sum(fast_window) / len(fast_window)
+#             slow_streak = slow_streak + 1 if slow_ratio_now >= slow_ratio else 0
+#             fast_streak = fast_streak + 1 if fast_ratio_now <= fast_ratio else 0
+#             if slow_streak >= streak_required:
+#                 step_g["step_time"] = min(step_g["step_time"] * slow_factor, max_step)
+#                 slow_streak = 0
+
 
     def grenailleuse_speed_controller(
         control_dt=1.0,
-        window_s=30.0,
-        slow_ratio=0.7,
-        fast_ratio=0.2,
-        streak_required=3,
-        slow_factor=1.1,
-        fast_factor=0.9,
+        window_s=20.0,
+        slow_band=0.60,
+        fast_band=0.30,
+        streak_required=4,
+        slow_factor=1.03,
+        fast_factor=0.98,
     ):
         from collections import deque
         window_len = max(1, int(window_s / control_dt))
-        slow_window = deque(maxlen=window_len)
-        fast_window = deque(maxlen=window_len)
+        pressure_window = deque(maxlen=window_len)
         slow_streak = 0
         fast_streak = 0
         base_step = step_g["step_time"]
-        min_step = base_step * 0.5
-        max_step = base_step * 2.0
+        min_step = base_step * 0.8
+        max_step = base_step * 1.4
+        pre_var_cap = max(1, pre_var_capacity)
+        var_cap = max(1, int(length_second // horizontal_spacing))
+        cont_cap = max(1, int(length_third // horizontal_spacing))
+        inspect_cap = max(1, det1_hold.capacity)
+        step_out_cap = max(1, step_g["output_store"].capacity)
         while True:
-            d1 = det_state["det1"]
-            d2 = det_state["det2"]
-            d3 = det_state["det3"]
-            slow_window.append(1 if (d1 and d2 and d3) else 0)
-            fast_window.append(1 if (d1 and d2) else 0)
-            slow_ratio_now = sum(slow_window) / len(slow_window)
-            fast_ratio_now = sum(fast_window) / len(fast_window)
-            slow_streak = slow_streak + 1 if slow_ratio_now >= slow_ratio else 0
-            fast_streak = fast_streak + 1 if fast_ratio_now <= fast_ratio else 0
+            step_out_fill = len(step_g["output_store"].items) / step_out_cap
+            pre_var_fill = len(pre_var_in.items) / pre_var_cap
+            var_fill = len(var_items_state["items"]) / var_cap
+            cont_fill = len(cont_items_state["items"]) / cont_cap
+            inspect_fill = len(det1_hold.items) / inspect_cap
+            downstream_pressure = (
+                0.30 * step_out_fill
+                + 0.25 * pre_var_fill
+                + 0.20 * var_fill
+                + 0.15 * cont_fill
+                + 0.10 * inspect_fill
+            )
+            pressure_window.append(downstream_pressure)
+            pressure_avg = sum(pressure_window) / len(pressure_window)
+            upstream_backlog = bool(p_buffer.items or pre_step_buffer.items)
+            if pressure_avg >= slow_band:
+                slow_streak += 1
+                fast_streak = 0
+            elif pressure_avg <= fast_band and upstream_backlog:
+                fast_streak += 1
+                slow_streak = 0
+            else:
+                slow_streak = 0
+                fast_streak = 0
             if slow_streak >= streak_required:
                 step_g["step_time"] = min(step_g["step_time"] * slow_factor, max_step)
                 slow_streak = 0

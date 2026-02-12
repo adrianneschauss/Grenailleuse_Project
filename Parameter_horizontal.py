@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 2000
+env_time = 60*60
 
 #57600
 
@@ -8,7 +8,7 @@ env_time = 2000
 #(par exemple 5% de 16h)
 
 variable_speed = True
-down_time = 0.05
+down_time = 0.00
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -26,18 +26,20 @@ max_iter = 30
 # 
 #Grenailleuse
 #Variable n°6 : Temps de passage à travers la grenailleuse (par exemple 80 secondes)
-step_time = 7 #according to jerome 
+step_time = 12 #according to jerome 
 #Variable n°7 : Nombre de bouteille dans la grenailleuse (par exemple 8 bouteilles)
 steps = 8
 #Variable n°8 : Temps de déchargement de la bouteille sur le convoyeur (par exemple 12 secondes)
-gr_conv = 8 #the time that we need to discharge (at which point the step conveyour doesnt move)
+gr_conv = 1
+
+robot = 7 #the time that we need to discharge (at which point the step conveyour doesnt move)
 #for continous stepping the bottle goes from post[0] to post[1] in 56 seconds, but longer due
 #to the gr_conv = 12 seconds 
 #!!question: shoudl this part be outside of the resource so that the conveyor still moves?
 
 
 #Vertical Conveyor
-speed = 13
+speed = 14
 
 length = 498
 
@@ -46,9 +48,9 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 7
 
-speed_tempon = 12
-first_speed = 12
-second_speed = 14
+speed_tempon = 13
+first_speed = 13
+second_speed = 15
 
 length_first = 151.4
 length_second = 395
@@ -62,12 +64,11 @@ horizontal_spacing= 85
 #Inspector
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
-inspect_min = 8
-inspect_max = 15
+inspect_min = 15
+inspect_max = 18
 min = 30
 max = 40
-s = 0.20
-
+s = 0.0
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
