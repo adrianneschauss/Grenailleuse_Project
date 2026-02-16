@@ -100,6 +100,7 @@ if inspected_times:
     ax.grid(True, color="#444444", alpha=0.6)
     ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     st.pyplot(fig)
+    plt.close(fig)
 else:
     st.info("Aucune bouteille inspectée pour l'instant.")
 
@@ -172,6 +173,7 @@ handles1, labels1 = ax1.get_legend_handles_labels()
 ax1.legend(handles1, labels1, loc="center left", bbox_to_anchor=(1.02, 0.5))
 
 st.pyplot(fig)
+plt.close(fig)
 
 st.subheader("Occupation de l'inspecteur")
 fig2, ax_left = plt.subplots()
@@ -199,6 +201,7 @@ ax_left.grid(True, color="#444444", alpha=0.6)
 handles2, labels2 = ax_left.get_legend_handles_labels()
 ax_left.legend(handles2, labels2, loc="center left", bbox_to_anchor=(1.02, 0.5))
 st.pyplot(fig2)
+plt.close(fig2)
 
 st.subheader("Retard entre arrivées")
 arrival_times = result["arrival_times"]
@@ -218,6 +221,7 @@ if len(arrival_times) > 1:
         spine.set_color("white")
     ax3.grid(True, color="#444444", alpha=0.6)
     st.pyplot(fig3)
+    plt.close(fig3)
 else:
     st.info("Pas assez d'arrivées pour calculer les retards.")
 
@@ -240,6 +244,7 @@ if len(arrival_times) > 1:
     ax_arr.grid(True, color="#444444", alpha=0.6)
     ax_arr.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     st.pyplot(fig_arr)
+    plt.close(fig_arr)
 else:
     st.info("Pas assez d'arrivées pour la distribution.")
 
@@ -261,6 +266,7 @@ if times and positions:
         spine.set_color("white")
     ax_occ.grid(True, color="#444444", alpha=0.6)
     st.pyplot(fig_occ)
+    plt.close(fig_occ)
 else:
     st.info("Pas assez de données pour l'occupation du convoyeur variable.")
 
@@ -446,26 +452,34 @@ if sidebar["show_animation"]:
             update_anim(preview_idx)
             st.pyplot(fig_anim)
 
-        anim = animation.FuncAnimation(
-            fig_anim,
-            update_anim,
-            frames=frame_indices,
-            init_func=init_anim,
-            interval=sidebar["animation_interval_ms"],
-            blit=False,
-        )
-        html = anim.to_jshtml()
         if show_step:
             height = 1250
         else:
             height = 900
         if sidebar["animation_mode"] == "Statique":
+            if frame_indices:
+                update_anim(frame_indices[-1])
             st.pyplot(fig_anim)
-        elif sidebar["animation_mode"] == "Interactif":
-            components.html(html, height=height, width=1000, scrolling=True)
         else:
+            anim = animation.FuncAnimation(
+                fig_anim,
+                update_anim,
+                frames=frame_indices,
+                init_func=init_anim,
+                interval=sidebar["animation_interval_ms"],
+                blit=False,
+            )
+            try:
+                html = anim.to_jshtml(embed_frames=True)
+            except TypeError:
+                html = anim.to_jshtml()
+        if sidebar["animation_mode"] == "Interactif":
+            components.html(html, height=height, width=1000, scrolling=True)
+        elif sidebar["animation_mode"] != "Statique":
             if len(html) > 5_000_000:
                 st.warning("Animation trop lourde pour l'affichage interactif. Affichage statique.")
+                if frame_indices:
+                    update_anim(frame_indices[-1])
                 st.pyplot(fig_anim)
             else:
                 components.html(html, height=height, width=1000, scrolling=True)

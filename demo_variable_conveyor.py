@@ -139,7 +139,6 @@ def demo_composite_flow(
             down_time,
             min_inter,
             max_inter,
-            arrival_times,
         )
     )
 
@@ -155,7 +154,7 @@ def demo_composite_flow(
                     yield env.timeout(0.01)
 
     env.process(feed_pre_step())
-    env.process(load_step_conveyor(env, pre_step_buffer, step_g))
+    env.process(load_step_conveyor(env, pre_step_buffer, step_g, arrival_times))
     grenailleuse_blocked_time = [0.0]
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time)) 
     # downstream chain: variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector

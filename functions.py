@@ -35,7 +35,6 @@ def arrival_process(
     down_time=0.05,
     min_inter=10,
     max_inter=30,
-    arrival_times=None,
 ):
     while True:
         if _buffer_has_space(p_buffer):
@@ -47,13 +46,11 @@ def arrival_process(
             )
             yield env.timeout(t)
             yield _buffer_put(p_buffer)
-            if arrival_times is not None:
-                arrival_times.append(env.now)
         else:
             yield env.timeout(0.1)
 
 
-def load_step_conveyor(env, p_buffer, step_conveyor):
+def load_step_conveyor(env, p_buffer, step_conveyor, arrival_times):
     while True:
         yield _buffer_get(p_buffer)
         placed = False
@@ -66,6 +63,8 @@ def load_step_conveyor(env, p_buffer, step_conveyor):
                     if step_conveyor["slots"][0] is None:
                         step_conveyor["next_id"] += 1
                         step_conveyor["slots"][0] = step_conveyor["next_id"]
+                        if arrival_times is not None:
+                            arrival_times.append(env.now)
                         placed = True
             if not placed:
                 yield env.timeout(0.05) #identical to the clock rate of the sensor 

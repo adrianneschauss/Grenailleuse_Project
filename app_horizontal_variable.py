@@ -422,23 +422,27 @@ if sidebar["show_animation"]:
                 scat_handoff.set_offsets(np.empty((0, 2)))
             return (scat_step, scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff) if show_step else (scat_var, scat_cont, scat_buffer, scat_inspector, scat_handoff)
 
-        anim = animation.FuncAnimation(
-            fig_anim,
-            update_anim,
-            frames=frame_indices,
-            init_func=init_anim,
-            interval=sidebar["animation_interval_ms"],
-            blit=False,
-        )
-        html = anim.to_jshtml()
         height = 560 if show_step else 360
         if sidebar["animation_mode"] == "Statique":
             if frame_indices:
                 update_anim(frame_indices[-1])
             st.pyplot(fig_anim)
-        elif sidebar["animation_mode"] == "Interactif":
-            components.html(html, height=height, width=1000, scrolling=True)
         else:
+            anim = animation.FuncAnimation(
+                fig_anim,
+                update_anim,
+                frames=frame_indices,
+                init_func=init_anim,
+                interval=sidebar["animation_interval_ms"],
+                blit=False,
+            )
+            try:
+                html = anim.to_jshtml(embed_frames=True)
+            except TypeError:
+                html = anim.to_jshtml()
+        if sidebar["animation_mode"] == "Interactif":
+            components.html(html, height=height, width=1000, scrolling=True)
+        elif sidebar["animation_mode"] != "Statique":
             if len(html) > 5_000_000:
                 st.warning("Animation trop lourde pour l'affichage interactif. Affichage statique.")
                 if frame_indices:
