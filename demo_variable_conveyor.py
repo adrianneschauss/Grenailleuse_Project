@@ -116,7 +116,7 @@ def demo_composite_flow(
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
     if p_buffer_capacity is None:
-        p_buffer_capacity = 1
+        p_buffer_capacity = 9
     if pre_step_buffer_capacity is None:
         pre_step_buffer_capacity = 1
     p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
@@ -481,7 +481,7 @@ def demo_composite_flow(
         pass
     post_inspect = simpy.Store(env)
 
-    post_inspect_delay = 0.0
+    post_inspect_delay = t_dis
 
     inspected_times = []
     busy_time = [0.0]

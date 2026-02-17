@@ -79,7 +79,7 @@ def demo_composite_flow(
     if det_hold_time is None:
         det_hold_time = Parameter_horizontal.det_hold_time
     if p_buffer_capacity is None:
-        p_buffer_capacity = 10
+        p_buffer_capacity = 9
     if pre_step_buffer_capacity is None:
         pre_step_buffer_capacity = 1
 
@@ -151,8 +151,8 @@ def demo_composite_flow(
     inspect_buffer = simpy.Store(env, capacity=1)
     post_inspect = simpy.Store(env)
 
-    pre_inspect_delay = t_dis2
-    post_inspect_delay = t_dis
+    pre_inspect_delay = t_dis
+    post_inspect_delay = t_dis2
     env.process(unload_delay(env, cont_out, inspect_buffer, pre_inspect_delay))
 ####################################################################################################
     inspected_times = []

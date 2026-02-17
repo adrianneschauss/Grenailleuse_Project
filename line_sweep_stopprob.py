@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from demo_composite_flow_robot import demo_composite_flow as run_robot
 from demo_variable_conveyor import demo_composite_flow as run_variable
 from demo_variable_conveyor_tempon import demo_composite_flow as run_tempon
+import Parameter_horizontal as PH
 
 
 def run_stats(fn, n_runs, seed_base, **kwargs):
@@ -55,7 +56,7 @@ def sweep_stop_prob(fn, p_vals, s_fixed, n_runs, seed_base, variable_speed):
 
 def main():
     p_vals = np.linspace(0.0, 0.15, 16)  # 0.00 -> 0.15 step 0.01
-    s_fixed = 0.10
+    s_fixed = 0.0
     n_runs = 20
 
     series = [
@@ -81,7 +82,7 @@ def main():
         axes[0].plot(p_vals, mean, label=label, color=color, linestyle=linestyle)
         axes[0].fill_between(p_vals, mean - ci, mean + ci, color=color, alpha=0.15)
     axes[0].set_ylabel("Bouteilles inspectées (moyenne)")
-    axes[0].set_title(rf"Impact probabilité d'arrêt (pause longue fixe à {s_fixed})")
+    axes[0].set_title(rf"Impact probabilité d'inspection longue à {s_fixed} (entre {PH.min} - {PH.max} s), inspection normale entre {PH.inspect_min} - {PH.inspect_max} s")
     axes[0].grid(True, alpha=0.3)
     axes[0].legend()
 
@@ -106,7 +107,7 @@ def main():
     axes[2].set_xlabel("Probabilité d'arrêt")
     axes[2].grid(True, alpha=0.3)
 
-    out_path = "line_sweep_stopprob.png"
+    out_path = rf"line_sweep_stopprob{s_fixed}{PH.inspect_min}{PH.inspect_max}.png"
     plt.savefig(out_path, dpi=150)
     print(f"Saved: {out_path}")
 

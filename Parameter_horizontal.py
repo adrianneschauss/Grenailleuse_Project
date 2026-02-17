@@ -39,14 +39,14 @@ robot = 7 #the time that we need to discharge (at which point the step conveyour
 
 
 #Vertical Conveyor
-speed = 14
+speed = 13
 
 length = 498
 
 spacing = 30
 
 #Variable conveyor
-step_time_2 = 7
+step_time_2 = 10
 
 speed_tempon = 13
 first_speed = 13
@@ -64,11 +64,11 @@ horizontal_spacing= 85
 #Inspector
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
-inspect_min = 15
-inspect_max = 18
+inspect_min = 12
+inspect_max = 15
 min = 30
 max = 40
-s = 0.0
+s = 0.01
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 

@@ -120,9 +120,9 @@ def demo_composite_flow(
 #--------------------------------------------------------------------
 #--------------------------------------------------------------------
     if p_buffer_capacity is None:
-        p_buffer_capacity = 1
+        p_buffer_capacity = 9
     p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
-    pre_step_buffer = simpy.Store(env, capacity=40)
+    pre_step_buffer = simpy.Store(env, capacity=1)
 #____
 # first step conveyor (grenailleuse)
     step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
@@ -414,7 +414,7 @@ def demo_composite_flow(
         base_step = step_g["step_time"]
         min_step = base_step * 0.8
         max_step = base_step * 1.4
-        pre_var_cap = max(1, pre_var_capacity)
+        pre_var_cap = max(1, pre_var_capacity) 
         var_cap = max(1, int(length_second // horizontal_spacing))
         cont_cap = max(1, int(length_third // horizontal_spacing))
         inspect_cap = max(1, det1_hold.capacity)
@@ -516,7 +516,7 @@ def demo_composite_flow(
             segment_id="variable",
             segment_length=length_second,
             mode_switch_delay=mode_switch_delay,
-            step_time=step_time,
+            step_time=step_time_2,
         )
     )
     env.process(
@@ -541,7 +541,7 @@ def demo_composite_flow(
     
     post_inspect = simpy.Store(env)
 
-    post_inspect_delay = 0.0
+    post_inspect_delay = t_dis
 
     inspected_times = []
     busy_time = [0.0]
