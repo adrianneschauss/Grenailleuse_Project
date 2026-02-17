@@ -200,6 +200,8 @@ def demo_composite_flow(
         "cont_outR_head": [],
         "cont_out_head": [],
         "inspect_buffer_head": [],
+        "grenailleuse_step_time": [],
+        "grenailleuse_speed_hz": [],
     }
 
     def _update_det(name, store):
@@ -226,13 +228,13 @@ def demo_composite_flow(
             yield env.timeout(control_dt)
 
     def grenailleuse_speed_controller(
-        control_dt=1.0,
-        window_s=20.0,
-        slow_band=0.60,
-        fast_band=0.30,
-        streak_required=4,
-        slow_factor=1.03,
-        fast_factor=0.98,
+        control_dt=Parameter_horizontal.speed_ctrl_control_dt,
+        window_s=Parameter_horizontal.speed_ctrl_window_s,
+        slow_band=Parameter_horizontal.speed_ctrl_slow_band,
+        fast_band=Parameter_horizontal.speed_ctrl_fast_band,
+        streak_required=Parameter_horizontal.speed_ctrl_streak_required,
+        slow_factor=Parameter_horizontal.speed_ctrl_slow_factor,
+        fast_factor=Parameter_horizontal.speed_ctrl_fast_factor,
     ):
         from collections import deque
         window_len = max(1, int(window_s / control_dt))
@@ -240,8 +242,8 @@ def demo_composite_flow(
         slow_streak = 0
         fast_streak = 0
         base_step = step_g["step_time"]
-        min_step = base_step * 0.8
-        max_step = base_step * 1.4
+        min_step = base_step * Parameter_horizontal.speed_ctrl_min_step_mult
+        max_step = base_step * Parameter_horizontal.speed_ctrl_max_step_mult
         step_out_cap = max(1, step_g["output_store"].capacity)
         cont_outr_cap = max(1, cont_outR.capacity)
         cont_out_cap = max(1, cont_out.capacity)
@@ -263,7 +265,7 @@ def demo_composite_flow(
             if pressure_avg >= slow_band:
                 slow_streak += 1
                 fast_streak = 0
-            elif pressure_avg <= fast_band and upstream_backlog:
+            elif pressure_avg <= fast_band:
                 fast_streak += 1
                 slow_streak = 0
             else:
@@ -291,6 +293,9 @@ def demo_composite_flow(
             monitor["cont_outR_head"].append(_head_id(cont_outR))
             monitor["cont_out_head"].append(_head_id(cont_out))
             monitor["inspect_buffer_head"].append(_head_id(inspect_buffer))
+            step_time_now = float(step_g["step_time"])
+            monitor["grenailleuse_step_time"].append(step_time_now)
+            monitor["grenailleuse_speed_hz"].append(1.0 / step_time_now if step_time_now > 0 else 0.0)
             yield env.timeout(sample_time)
 
     env.process(monitor_process())

@@ -57,7 +57,7 @@ def sweep_stop_prob(fn, p_vals, s_fixed, n_runs, seed_base, variable_speed):
 def main():
     p_vals = np.linspace(0.0, 0.15, 16)  # 0.00 -> 0.15 step 0.01
     s_fixed = 0.01
-    n_runs = 20
+    n_runs = 5
 
     series = [
         ("Robot (var)", "tab:blue", 1100, run_robot),

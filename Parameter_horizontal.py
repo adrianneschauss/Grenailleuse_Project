@@ -7,8 +7,8 @@ env_time = 60*60*8
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
 
-variable_speed = True
-down_time = 0.00
+variable_speed = False
+down_time = 0.1
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -26,7 +26,7 @@ max_iter = 30
 # 
 #Grenailleuse
 #Variable n°6 : Temps de passage à travers la grenailleuse (par exemple 80 secondes)
-step_time = 12 #according to jerome 
+step_time = 10 #according to jerome 
 #Variable n°7 : Nombre de bouteille dans la grenailleuse (par exemple 8 bouteilles)
 steps = 8
 #Variable n°8 : Temps de déchargement de la bouteille sur le convoyeur (par exemple 12 secondes)
@@ -48,7 +48,7 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 10
 
-speed_tempon = 18
+speed_tempon = 17
 first_speed = 13
 second_speed = 15
 
@@ -56,7 +56,7 @@ length_first = 151.4
 length_second = 395
 length_third = 93
 
-vertical_spacing = 35
+vertical_spacing = 40
 horizontal_spacing= 85
 
 
@@ -64,11 +64,11 @@ horizontal_spacing= 85
 #Inspector
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
-inspect_min = 12
+inspect_min = 8
 inspect_max = 12
 min = 30
 max = 40
-s = 0.00
+s = 0.2
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
@@ -94,3 +94,15 @@ dt = 1
 
 #Mode switch hysteresis (seconds) to prevent rapid toggling
 mode_switch_delay = 5
+
+# Shared speed-controller tuning across all demo flows.
+# Using one profile keeps the approximate speed change per control action consistent.
+speed_ctrl_control_dt = 1.0
+speed_ctrl_fast_band = 0.3
+speed_ctrl_fast_factor = 0.85
+speed_ctrl_max_step_mult = 1.8
+speed_ctrl_min_step_mult = 0.7
+speed_ctrl_slow_band = 0.7
+speed_ctrl_slow_factor = 1.05
+speed_ctrl_streak_required = 3
+speed_ctrl_window_s = 30.0

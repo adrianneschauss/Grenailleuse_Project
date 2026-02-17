@@ -60,10 +60,16 @@ step_time_total = float(result.get("step_time_total", 0.0))
 cont_time_total = float(result.get("cont_time_total", 0.0))
 busy_time = float(result.get("busy_time", 0.0))
 blocked_time = float(result.get("grenailleuse_blocked_time", 0.0))
+inspected_count = len(result["inspected_times"])
+inspected_after_10min = sum(1 for t in result["inspected_times"] if t >= 600.0)
+duration_after_10min = max(0.0, total_time - 600.0)
+rate_after_10min = np.round((inspected_after_10min * 3600.0 / duration_after_10min), 2) if duration_after_10min else 0.0
 def pct(value, total):
     return np.round((value * 100.0 / total), 2) if total else 0.0
 resume_rows = [
-    {"Metric": "Inspectées", "Valeur": len(result["inspected_times"])},
+    {"Metric": "Inspectées", "Valeur": inspected_count},
+    {"Metric": "Bouteilles/heure après 10 min", "Valeur": rate_after_10min},
+    {"Metric": "Bouteilles/heure", "Valeur": np.round((inspected_count * 3600.0 / total_time), 2) if total_time else 0.0},
     {"Metric": "Temps total (s)", "Valeur": np.round(total_time, 2)},
     {"Metric": "% temps pas a pas", "Valeur": pct(step_time_total, total_time)},
     {"Metric": "% temps continu", "Valeur": pct(cont_time_total, total_time)},

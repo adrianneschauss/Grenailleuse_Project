@@ -341,13 +341,13 @@ def demo_composite_flow(
             yield env.timeout(dt)
 
     def grenailleuse_speed_controller(
-        control_dt=1.0,
-        window_s=20.0,
-        slow_band=0.60,
-        fast_band=0.30,
-        streak_required=4,
-        slow_factor=1.03,
-        fast_factor=0.98,
+        control_dt=Parameter_horizontal.speed_ctrl_control_dt,
+        window_s=Parameter_horizontal.speed_ctrl_window_s,
+        slow_band=Parameter_horizontal.speed_ctrl_slow_band,
+        fast_band=Parameter_horizontal.speed_ctrl_fast_band,
+        streak_required=Parameter_horizontal.speed_ctrl_streak_required,
+        slow_factor=Parameter_horizontal.speed_ctrl_slow_factor,
+        fast_factor=Parameter_horizontal.speed_ctrl_fast_factor,
     ):
         from collections import deque
         window_len = max(1, int(window_s / control_dt))
@@ -355,8 +355,8 @@ def demo_composite_flow(
         slow_streak = 0
         fast_streak = 0
         base_step = step_g["step_time"]
-        min_step = base_step * 0.8
-        max_step = base_step * 1.4
+        min_step = base_step * Parameter_horizontal.speed_ctrl_min_step_mult
+        max_step = base_step * Parameter_horizontal.speed_ctrl_max_step_mult
         var_cap = max(1, int(length_second // horizontal_spacing))
         cont_cap = max(1, int(length_third // horizontal_spacing))
         inspect_cap = max(1, det1_hold.capacity)
@@ -504,6 +504,8 @@ def demo_composite_flow(
         "inspect_buffer": [],
         "post_inspect": [],
         "inspector_busy": [],
+        "grenailleuse_step_time": [],
+        "grenailleuse_speed_hz": [],
     }
 
     def monitor_process():
@@ -513,6 +515,9 @@ def demo_composite_flow(
             monitor["inspect_buffer"].append(len(det1_hold.items))
             monitor["post_inspect"].append(len(post_inspect.items))
             monitor["inspector_busy"].append(inspector.count)
+            step_time_now = float(step_g["step_time"])
+            monitor["grenailleuse_step_time"].append(step_time_now)
+            monitor["grenailleuse_speed_hz"].append(1.0 / step_time_now if step_time_now > 0 else 0.0)
             yield env.timeout(sample_time)
 
     env.process(monitor_process())

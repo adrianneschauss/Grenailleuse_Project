@@ -55,7 +55,16 @@ def demo_composite_flow(
     animation_interval_ms=50,
     mode_switch_delay=1.0,
     p_buffer_capacity=None,
-    det_hold_time = None
+    det_hold_time = None,
+    speed_ctrl_control_dt=None,
+    speed_ctrl_window_s=None,
+    speed_ctrl_slow_band=None,
+    speed_ctrl_fast_band=None,
+    speed_ctrl_streak_required=None,
+    speed_ctrl_slow_factor=None,
+    speed_ctrl_fast_factor=None,
+    speed_ctrl_min_step_mult=None,
+    speed_ctrl_max_step_mult=None,
 ):
     env = simpy.Environment()
     if variable_speed is None:
@@ -114,6 +123,24 @@ def demo_composite_flow(
         env_time = Parameter_horizontal.env_time
     if det_hold_time is None:
         det_hold_time = Parameter_horizontal.det_hold_time
+    if speed_ctrl_control_dt is None:
+        speed_ctrl_control_dt = Parameter_horizontal.speed_ctrl_control_dt
+    if speed_ctrl_window_s is None:
+        speed_ctrl_window_s = Parameter_horizontal.speed_ctrl_window_s
+    if speed_ctrl_slow_band is None:
+        speed_ctrl_slow_band = Parameter_horizontal.speed_ctrl_slow_band
+    if speed_ctrl_fast_band is None:
+        speed_ctrl_fast_band = Parameter_horizontal.speed_ctrl_fast_band
+    if speed_ctrl_streak_required is None:
+        speed_ctrl_streak_required = Parameter_horizontal.speed_ctrl_streak_required
+    if speed_ctrl_slow_factor is None:
+        speed_ctrl_slow_factor = Parameter_horizontal.speed_ctrl_slow_factor
+    if speed_ctrl_fast_factor is None:
+        speed_ctrl_fast_factor = Parameter_horizontal.speed_ctrl_fast_factor
+    if speed_ctrl_min_step_mult is None:
+        speed_ctrl_min_step_mult = Parameter_horizontal.speed_ctrl_min_step_mult
+    if speed_ctrl_max_step_mult is None:
+        speed_ctrl_max_step_mult = Parameter_horizontal.speed_ctrl_max_step_mult
     
     
 #--------------------------------------------------------------------
@@ -365,47 +392,18 @@ def demo_composite_flow(
                         cont_end_state["active"] = 1
                         break
             yield env.timeout(dt)
-# def grenailleuse_speed_controller(
-#         control_dt=1.0,
-#         window_s=30.0,
-#         slow_ratio=0.7,
-#         fast_ratio=0.05,
-#         streak_required=10,
-#         slow_factor=1.1,
-#         fast_factor=0.97,
-#     ):
-#         from collections import deque
-#         window_len = max(1, int(window_s / control_dt))
-#         slow_window = deque(maxlen=window_len)
-#         fast_window = deque(maxlen=window_len)
-#         slow_streak = 0
-#         fast_streak = 0
-#         base_step = step_g["step_time"]
-#         min_step = base_step * 0.5
-#         max_step = base_step * 2
-#         while True:
-#             d1 = det_state["det1"]
-#             d2 = det_state["det2"]
-#             d3 = det_state["det3"]
-#             slow_window.append(1 if (d1 ) else 0)
-#             fast_window.append(1 if (d1 and d2) else 0)
-#             slow_ratio_now = sum(slow_window) / len(slow_window)
-#             fast_ratio_now = sum(fast_window) / len(fast_window)
-#             slow_streak = slow_streak + 1 if slow_ratio_now >= slow_ratio else 0
-#             fast_streak = fast_streak + 1 if fast_ratio_now <= fast_ratio else 0
-#             if slow_streak >= streak_required:
-#                 step_g["step_time"] = min(step_g["step_time"] * slow_factor, max_step)
-#                 slow_streak = 0
+
+
 
 
     def grenailleuse_speed_controller(
-        control_dt=1.0,
-        window_s=20.0,
-        slow_band=0.60,
-        fast_band=0.30,
-        streak_required=4,
-        slow_factor=1.03,
-        fast_factor=0.98,
+        control_dt=speed_ctrl_control_dt,
+        window_s=speed_ctrl_window_s,
+        slow_band=speed_ctrl_slow_band,
+        fast_band=speed_ctrl_fast_band,
+        streak_required=speed_ctrl_streak_required,
+        slow_factor=speed_ctrl_slow_factor,
+        fast_factor=speed_ctrl_fast_factor,
     ):
         from collections import deque
         window_len = max(1, int(window_s / control_dt))
@@ -413,22 +411,25 @@ def demo_composite_flow(
         slow_streak = 0
         fast_streak = 0
         base_step = step_g["step_time"]
-        min_step = base_step * 0.8
-        max_step = base_step * 1.4
+        min_step = base_step * speed_ctrl_min_step_mult
+        max_step = base_step * speed_ctrl_max_step_mult
+        pre_var_cap = max(1, pre_var_in.capacity)
         var_cap = max(1, int(length_second // horizontal_spacing))
         cont_cap = max(1, int(length_third // horizontal_spacing))
         inspect_cap = max(1, det1_hold.capacity)
         step_out_cap = max(1, step_g["output_store"].capacity)
         while True:
             step_out_fill = len(step_g["output_store"].items) / step_out_cap
+            pre_var_fill = len(pre_var_in.items) / pre_var_cap
             var_fill = len(var_items_state["items"]) / var_cap
             cont_fill = len(cont_items_state["items"]) / cont_cap
             inspect_fill = len(det1_hold.items) / inspect_cap
             downstream_pressure = (
-                0.35 * step_out_fill
+                0.30 * step_out_fill
+                + 0.15 * pre_var_fill #0.20
                 + 0.30 * var_fill
-                + 0.20 * cont_fill
-                + 0.15 * inspect_fill
+                + 0.15 * cont_fill
+                + 0.10 * inspect_fill
             )
             pressure_window.append(downstream_pressure)
             pressure_avg = sum(pressure_window) / len(pressure_window)
@@ -562,6 +563,8 @@ def demo_composite_flow(
         "inspect_buffer": [],
         "post_inspect": [],
         "inspector_busy": [],
+        "grenailleuse_step_time": [],
+        "grenailleuse_speed_hz": [],
     }
 
     def monitor_process():
@@ -571,6 +574,9 @@ def demo_composite_flow(
             monitor["inspect_buffer"].append(len(det1_hold.items))
             monitor["post_inspect"].append(len(post_inspect.items))
             monitor["inspector_busy"].append(inspector.count)
+            step_time_now = float(step_g["step_time"])
+            monitor["grenailleuse_step_time"].append(step_time_now)
+            monitor["grenailleuse_speed_hz"].append(1.0 / step_time_now if step_time_now > 0 else 0.0)
             yield env.timeout(sample_time)
 
     env.process(monitor_process())
