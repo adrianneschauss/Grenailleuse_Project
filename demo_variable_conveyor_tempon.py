@@ -159,8 +159,9 @@ def demo_composite_flow(
     grenailleuse_blocked_time = [0.0]
     env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time)) 
     # downstream chain: pre-variable continuous conveyor -> variable conveyor -> continuous conveyor -> det2 hold -> det1 hold -> inspector
-    pre_var_capacity = int(length_first // vertical_spacing)
-    pre_var_in = simpy.Store(env, capacity=pre_var_capacity)
+    # Keep only a handoff slot after the pre-variable conveyor.
+    # The in-flight capacity is already enforced by continuous_conveyor(length_first, vertical_spacing).
+    pre_var_in = simpy.Store(env, capacity=1)
     det1_hold = simpy.Store(env, capacity=1)
     cont_items_state = {"items": []}
     det_state = {"det1": 0, "det2": 0, "det3": 0, "det4": 0}
@@ -414,23 +415,20 @@ def demo_composite_flow(
         base_step = step_g["step_time"]
         min_step = base_step * 0.8
         max_step = base_step * 1.4
-        pre_var_cap = max(1, pre_var_capacity) 
         var_cap = max(1, int(length_second // horizontal_spacing))
         cont_cap = max(1, int(length_third // horizontal_spacing))
         inspect_cap = max(1, det1_hold.capacity)
         step_out_cap = max(1, step_g["output_store"].capacity)
         while True:
             step_out_fill = len(step_g["output_store"].items) / step_out_cap
-            pre_var_fill = len(pre_var_in.items) / pre_var_cap
             var_fill = len(var_items_state["items"]) / var_cap
             cont_fill = len(cont_items_state["items"]) / cont_cap
             inspect_fill = len(det1_hold.items) / inspect_cap
             downstream_pressure = (
-                0.30 * step_out_fill
-                + 0.25 * pre_var_fill
-                + 0.20 * var_fill
-                + 0.15 * cont_fill
-                + 0.10 * inspect_fill
+                0.35 * step_out_fill
+                + 0.30 * var_fill
+                + 0.20 * cont_fill
+                + 0.15 * inspect_fill
             )
             pressure_window.append(downstream_pressure)
             pressure_avg = sum(pressure_window) / len(pressure_window)

@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 60*60
+env_time = 60*60*8
 
 #57600
 
@@ -48,7 +48,7 @@ spacing = 30
 #Variable conveyor
 step_time_2 = 10
 
-speed_tempon = 13
+speed_tempon = 18
 first_speed = 13
 second_speed = 15
 
@@ -65,10 +65,10 @@ horizontal_spacing= 85
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 12
-inspect_max = 15
+inspect_max = 12
 min = 30
 max = 40
-s = 0.01
+s = 0.00
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
