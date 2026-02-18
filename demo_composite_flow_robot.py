@@ -87,13 +87,13 @@ def demo_composite_flow(
     if pre_step_buffer_capacity is None:
         pre_step_buffer_capacity = 1
     if speed_ctrl_w_step_out is None:
-        speed_ctrl_w_step_out = 0.4
+        speed_ctrl_w_step_out = 0.30
     if speed_ctrl_w_robot_out is None:
-        speed_ctrl_w_robot_out = 0.2
+        speed_ctrl_w_robot_out = 0.15
     if speed_ctrl_w_conv_out is None:
-        speed_ctrl_w_conv_out = 0.3
+        speed_ctrl_w_conv_out = 0.4
     if speed_ctrl_w_inspect is None:
-        speed_ctrl_w_inspect = 0.1
+        speed_ctrl_w_inspect = 0.15
 
     w_sum = (
         float(speed_ctrl_w_step_out)
@@ -102,10 +102,10 @@ def demo_composite_flow(
         + float(speed_ctrl_w_inspect)
     )
     if w_sum <= 0.0:
-        speed_ctrl_w_step_out = 0.15
-        speed_ctrl_w_robot_out = 0.30
-        speed_ctrl_w_conv_out = 0.20
-        speed_ctrl_w_inspect = 0.35
+        speed_ctrl_w_step_out = 0.4  
+        speed_ctrl_w_robot_out = 0.2 
+        speed_ctrl_w_conv_out = 0.3 
+        speed_ctrl_w_inspect = 0.1 
         w_sum = 1.0
     speed_ctrl_w_step_out = float(speed_ctrl_w_step_out) / w_sum
     speed_ctrl_w_robot_out = float(speed_ctrl_w_robot_out) / w_sum

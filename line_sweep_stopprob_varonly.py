@@ -56,7 +56,7 @@ def sweep_stop_prob(fn, p_vals, s_fixed, n_runs, seed_base, variable_speed):
 
 def main():
     p_vals = np.linspace(0.0, 0.15, 16)  # 0.00 -> 0.15 step 0.01
-    s_fixed = 0.0
+    s_fixed = 0.15
     n_runs = 4
 
     series = [
@@ -78,7 +78,7 @@ def main():
         axes[0].plot(p_vals, mean, label=label, color=color)
         axes[0].fill_between(p_vals, mean - ci, mean + ci, color=color, alpha=0.2)
     axes[0].set_ylabel("Bouteilles inspectées (moyenne)")
-    axes[0].set_title(rf"Impact probabilité d'inspection longue à {s_fixed} verticale (entre {PH.min} - {PH.max} s), inspection normale entre {PH.inspect_min} - {PH.inspect_max} s")
+    axes[0].set_title(rf"Impact probabilité d'inspection longue à {s_fixed} (entre {PH.min} - {PH.max} s), inspection normale entre {PH.inspect_min} - {PH.inspect_max} s")
     axes[0].grid(True, alpha=0.3)
     axes[0].legend()
 
@@ -101,7 +101,7 @@ def main():
     axes[2].set_xlabel("Probabilité d'arrêt")
     axes[2].grid(True, alpha=0.3)
 
-    out_path = rf"line_sweep_stopprob_varonly_new_{s_fixed}{PH.inspect_min}{PH.inspect_max}.png"
+    out_path = rf"line_sweep_stopprob_varonly_old_parameters{s_fixed}{PH.inspect_min}{PH.inspect_max}.png"
     plt.savefig(out_path, dpi=150)
     print(f"Saved: {out_path}")
 

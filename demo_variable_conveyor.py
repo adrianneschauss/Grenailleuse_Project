@@ -115,14 +115,13 @@ def demo_composite_flow(
     if det_hold_time is None:
         det_hold_time = Parameter_horizontal.det_hold_time
     if speed_ctrl_w_step_out is None:
-        speed_ctrl_w_step_out = 0.7
+        speed_ctrl_w_step_out = 0.35
     if speed_ctrl_w_var is None:
-        speed_ctrl_w_var = 0.231
+        speed_ctrl_w_var = 0.3
     if speed_ctrl_w_cont is None:
-        speed_ctrl_w_cont = 0.027
+        speed_ctrl_w_cont = 0.2
     if speed_ctrl_w_inspect is None:
-        speed_ctrl_w_inspect = 0.035
-
+        speed_ctrl_w_inspect = 0.15
     w_sum = (
         float(speed_ctrl_w_step_out)
         + float(speed_ctrl_w_var)

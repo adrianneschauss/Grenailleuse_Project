@@ -147,15 +147,15 @@ def demo_composite_flow(
     if speed_ctrl_max_step_mult is None:
         speed_ctrl_max_step_mult = Parameter_horizontal.speed_ctrl_max_step_mult
     if speed_ctrl_w_step_out is None:
-        speed_ctrl_w_step_out = 0.450
+        speed_ctrl_w_step_out = 0.30
     if speed_ctrl_w_pre_var is None:
-        speed_ctrl_w_pre_var = 0.192 
+        speed_ctrl_w_pre_var = 0.15
     if speed_ctrl_w_var is None:
-        speed_ctrl_w_var = 0.288
+        speed_ctrl_w_var = 0.30
     if speed_ctrl_w_cont is None:
-        speed_ctrl_w_cont = 0.018
+        speed_ctrl_w_cont = 0.15
     if speed_ctrl_w_inspect is None:
-        speed_ctrl_w_inspect =  0.051
+        speed_ctrl_w_inspect =  0.1
 
     w_sum = (
         float(speed_ctrl_w_step_out)

@@ -7,7 +7,7 @@ env_time = 60*60*8
 #(par exemple 5% de 16h)
 
 variable_speed = False
-down_time = 0.0
+down_time = 0.2
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -67,7 +67,7 @@ inspect_min = 8
 inspect_max = 16
 min = 30
 max = 40
-s = 0.0
+s = 0.05
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
