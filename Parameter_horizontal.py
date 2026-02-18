@@ -1,14 +1,13 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
 env_time = 60*60*8
-
 #57600
 
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
 #(par exemple 5% de 16h)
 
 variable_speed = False
-down_time = 0.1
+down_time = 0.0
 #Variable n°5 : Temps de chargement pour une bouteille (par exemple 12 secondes)
 mean_interval = 12
 #Variable n°3 : Temps minimum de l’interruption chargement (par exemple 10 secondes)
@@ -65,10 +64,10 @@ horizontal_spacing= 85
 #Variable n° ? : Temps minimum pour l’inspection de la bouteille ; 
 #Variable n° ? : Temps maximum pour l’inspection de la bouteille
 inspect_min = 8
-inspect_max = 12
+inspect_max = 16
 min = 30
 max = 40
-s = 0.2
+s = 0.0
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 

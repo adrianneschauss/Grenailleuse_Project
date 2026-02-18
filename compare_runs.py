@@ -83,6 +83,12 @@ def one_decimal(value):
     except (TypeError, ValueError):
         return value
 
+def rounded_int(value):
+    try:
+        return int(round(float(value)))
+    except (TypeError, ValueError):
+        return value
+
 
 def main():
     n_runs = 3
@@ -105,6 +111,7 @@ def main():
             "cont_time_mean",
         ):
             row[key] = one_decimal(row[key])
+        row["bottles_mean"] = rounded_int(row["bottles_mean"])
 
     display_headers = [
         "Cas",

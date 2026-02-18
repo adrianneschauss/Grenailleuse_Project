@@ -65,6 +65,11 @@ def demo_composite_flow(
     speed_ctrl_fast_factor=None,
     speed_ctrl_min_step_mult=None,
     speed_ctrl_max_step_mult=None,
+    speed_ctrl_w_step_out=None,
+    speed_ctrl_w_pre_var=None,
+    speed_ctrl_w_var=None,
+    speed_ctrl_w_cont=None,
+    speed_ctrl_w_inspect=None,
 ):
     env = simpy.Environment()
     if variable_speed is None:
@@ -141,6 +146,36 @@ def demo_composite_flow(
         speed_ctrl_min_step_mult = Parameter_horizontal.speed_ctrl_min_step_mult
     if speed_ctrl_max_step_mult is None:
         speed_ctrl_max_step_mult = Parameter_horizontal.speed_ctrl_max_step_mult
+    if speed_ctrl_w_step_out is None:
+        speed_ctrl_w_step_out = 0.450
+    if speed_ctrl_w_pre_var is None:
+        speed_ctrl_w_pre_var = 0.192 
+    if speed_ctrl_w_var is None:
+        speed_ctrl_w_var = 0.288
+    if speed_ctrl_w_cont is None:
+        speed_ctrl_w_cont = 0.018
+    if speed_ctrl_w_inspect is None:
+        speed_ctrl_w_inspect =  0.051
+
+    w_sum = (
+        float(speed_ctrl_w_step_out)
+        + float(speed_ctrl_w_pre_var)
+        + float(speed_ctrl_w_var)
+        + float(speed_ctrl_w_cont)
+        + float(speed_ctrl_w_inspect)
+    )
+    if w_sum <= 0.0:
+        speed_ctrl_w_step_out = 0.450
+        speed_ctrl_w_pre_var = 0.192 
+        speed_ctrl_w_var = 0.288
+        speed_ctrl_w_cont = 0.018
+        speed_ctrl_w_inspect = 0.051
+        w_sum = 1.0
+    speed_ctrl_w_step_out = float(speed_ctrl_w_step_out) / w_sum
+    speed_ctrl_w_pre_var = float(speed_ctrl_w_pre_var) / w_sum
+    speed_ctrl_w_var = float(speed_ctrl_w_var) / w_sum
+    speed_ctrl_w_cont = float(speed_ctrl_w_cont) / w_sum
+    speed_ctrl_w_inspect = float(speed_ctrl_w_inspect) / w_sum
     
     
 #--------------------------------------------------------------------
@@ -425,11 +460,11 @@ def demo_composite_flow(
             cont_fill = len(cont_items_state["items"]) / cont_cap
             inspect_fill = len(det1_hold.items) / inspect_cap
             downstream_pressure = (
-                0.30 * step_out_fill
-                + 0.15 * pre_var_fill #0.20
-                + 0.30 * var_fill
-                + 0.15 * cont_fill
-                + 0.10 * inspect_fill
+                speed_ctrl_w_step_out * step_out_fill
+                + speed_ctrl_w_pre_var * pre_var_fill
+                + speed_ctrl_w_var * var_fill
+                + speed_ctrl_w_cont * cont_fill
+                + speed_ctrl_w_inspect * inspect_fill
             )
             pressure_window.append(downstream_pressure)
             pressure_avg = sum(pressure_window) / len(pressure_window)

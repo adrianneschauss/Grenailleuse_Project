@@ -56,8 +56,8 @@ def sweep_stop_prob(fn, p_vals, s_fixed, n_runs, seed_base, variable_speed):
 
 def main():
     p_vals = np.linspace(0.0, 0.15, 16)  # 0.00 -> 0.15 step 0.01
-    s_fixed = 0.5
-    n_runs = 5
+    s_fixed = 0.2
+    n_runs = 4
 
     series = [
         ("Robot", "tab:blue", False, 1000, run_robot),
@@ -107,7 +107,7 @@ def main():
     axes[2].set_xlabel("Probabilité d'arrêt")
     axes[2].grid(True, alpha=0.3)
 
-    out_path = rf"line_sweep_stopprob{s_fixed}{PH.inspect_min}{PH.inspect_max}.png"
+    out_path = rf"line_sweep_stopprob_new_{s_fixed}{PH.inspect_min}{PH.inspect_max}.png"
     plt.savefig(out_path, dpi=150)
     print(f"Saved: {out_path}")
 
