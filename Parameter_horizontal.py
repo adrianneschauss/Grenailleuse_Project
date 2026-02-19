@@ -1,6 +1,6 @@
 #Parameters
 #Variable n°1 : Temps de production en heure (par exemple 16h)
-env_time = 60*60*8
+env_time = 60*60
 #57600
 
 #Variable n°2 : Pourcentage du temps de production ou le chargement est interrompu
