@@ -31,6 +31,7 @@ def demo_composite_flow(
     det_hold_time=None,
     p_buffer_capacity=None,
     pre_step_buffer_capacity=None,
+    step_output_capacity=None,
     speed_ctrl_w_step_out=None,
     speed_ctrl_w_robot_out=None,
     speed_ctrl_w_conv_out=None,
@@ -86,6 +87,8 @@ def demo_composite_flow(
         p_buffer_capacity = 9
     if pre_step_buffer_capacity is None:
         pre_step_buffer_capacity = 1
+    if step_output_capacity is None:
+        step_output_capacity = getattr(Parameter_horizontal, "step_output_capacity", 1)
     if speed_ctrl_w_step_out is None:
         speed_ctrl_w_step_out = 0.30
     if speed_ctrl_w_robot_out is None:
@@ -114,7 +117,13 @@ def demo_composite_flow(
 
     p_buffer = simpy.Store(env, capacity=p_buffer_capacity)
     pre_step_buffer = simpy.Store(env, capacity=pre_step_buffer_capacity)
-    step_g = create_step_conveyor(env, "G_step", step_time=step_time, steps=steps, output_capacity=1)
+    step_g = create_step_conveyor(
+        env,
+        "G_step",
+        step_time=step_time,
+        steps=steps,
+        output_capacity=step_output_capacity,
+    )
     
     cont_out = simpy.Store(env, capacity=cont_out_capacity)
     inspector = simpy.Resource(env, capacity=1)
@@ -150,7 +159,19 @@ def demo_composite_flow(
     env.process(feed_pre_step())
     env.process(load_step_conveyor(env, pre_step_buffer, step_g, arrival_times))
     grenailleuse_blocked_time = [0.0]
-    env.process(step_conveyor_advance(env, step_g, gr_conv, grenailleuse_exit_times, grenailleuse_blocked_time))
+    grenailleuse_wait_reason_time = {}
+    grenailleuse_wait_reason_count = {}
+    env.process(
+        step_conveyor_advance(
+            env,
+            step_g,
+            gr_conv,
+            grenailleuse_exit_times,
+            grenailleuse_blocked_time,
+            wait_reason_time=grenailleuse_wait_reason_time,
+            wait_reason_count=grenailleuse_wait_reason_count,
+        )
+    )
 
     robot_times = []
     busyR_time = [0.0]
@@ -352,6 +373,8 @@ def demo_composite_flow(
         "arrival_times": arrival_times,
         "grenailleuse_exit_times": grenailleuse_exit_times,
         "grenailleuse_blocked_time": grenailleuse_blocked_time[0],
+        "grenailleuse_wait_reason_time": grenailleuse_wait_reason_time,
+        "grenailleuse_wait_reason_count": grenailleuse_wait_reason_count,
         "conveyor_exit_times": conveyor_exit_times,
         "monitor": monitor,
         "busy_time": busy_time[0],

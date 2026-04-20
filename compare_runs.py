@@ -1,4 +1,5 @@
 import random
+from collections import defaultdict
 from statistics import mean
 
 import numpy as np
@@ -19,6 +20,8 @@ def run_n(label, fn, n, seed_base=1234):
     total_times = []
     bottles_per_hour_after_600 = []
     occ_after_600 = []
+    reason_time_acc = defaultdict(float)
+    reason_count_acc = defaultdict(int)
     warmup_s = 600.0
     for i in range(n):
         random.seed(seed_base + i)
@@ -31,6 +34,12 @@ def run_n(label, fn, n, seed_base=1234):
         cont_times.append(float(result.get("cont_time_total", 0.0)))
         total_time = float(result.get("total_time", 0.0))
         total_times.append(total_time)
+        reason_time = result.get("grenailleuse_wait_reason_time", {}) or {}
+        reason_count = result.get("grenailleuse_wait_reason_count", {}) or {}
+        for k, v in reason_time.items():
+            reason_time_acc[str(k)] += float(v)
+        for k, v in reason_count.items():
+            reason_count_acc[str(k)] += int(v)
 
         inspected_times = result.get("inspected_times", []) or []
         if total_time > warmup_s:
@@ -54,6 +63,9 @@ def run_n(label, fn, n, seed_base=1234):
     total_mean = mean(total_times) if total_times else 0.0
     def pct(x):
         return (x / total_mean * 100.0) if total_mean else 0.0
+    reason_pct = {
+        k: pct(v / n) for k, v in sorted(reason_time_acc.items(), key=lambda kv: kv[0])
+    }
     return {
         "case": label,
         "busy_time_mean": pct(mean(busy_times) if busy_times else 0.0),
@@ -63,6 +75,8 @@ def run_n(label, fn, n, seed_base=1234):
         "busy_after_600_mean": mean(occ_after_600) if occ_after_600 else 0.0,
         "step_time_mean": pct(mean(step_times) if step_times else 0.0),
         "cont_time_mean": pct(mean(cont_times) if cont_times else 0.0),
+        "grenailleuse_wait_reason_pct": reason_pct,
+        "grenailleuse_wait_reason_count_total": dict(reason_count_acc),
     }
 
 def print_table(rows, headers):
@@ -139,6 +153,29 @@ def main():
         )
     print("=== Résultats moyens (n=10) ===")
     print_table(display_rows, display_headers)
+    print("\n=== Raisons d'arrêt grenailleuse (moyenne %) ===")
+    for row in results:
+        reasons = row.get("grenailleuse_wait_reason_pct", {}) or {}
+        counts = row.get("grenailleuse_wait_reason_count_total", {}) or {}
+        blocked_reason_keys = {"output_full"}
+        blocked_reasons = {k: v for k, v in reasons.items() if k in blocked_reason_keys}
+        non_blocked_reasons = {k: v for k, v in reasons.items() if k not in blocked_reason_keys}
+
+        blocked_text = ", ".join(
+            f"{k}: {one_decimal(v)}% (n={counts.get(k, 0)})"
+            for k, v in blocked_reasons.items()
+        )
+        non_blocked_text = ", ".join(
+            f"{k}: {one_decimal(v)}% (n={counts.get(k, 0)})"
+            for k, v in non_blocked_reasons.items()
+        )
+        if not blocked_text:
+            blocked_text = "aucune"
+        if not non_blocked_text:
+            non_blocked_text = "aucune"
+        print(f"- {row['case']}:")
+        print(f"  blocage (KPI): {blocked_text}")
+        print(f"  attente non bloquante: {non_blocked_text}")
 
     params_common = [
         ("Intervalle moyen (s)", P.mean_interval),

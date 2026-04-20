@@ -88,7 +88,7 @@ def main():
     candidates = rng.dirichlet(alpha=np.ones(5), size=n_candidates).tolist()
     default_weights = [0.10, 0.10, 0.20, 0.30, 0.30]
     candidates = [default_weights] + candidates
-
+    print(candidates)
     points = []
     for idx, w in enumerate(candidates):
         bottles, blocked = run_stats(
@@ -97,6 +97,7 @@ def main():
             weights=w,
             base_kwargs=base_kwargs,
         )
+        
         score = bottles - 0.5 * blocked
         points.append(
             {
@@ -182,7 +183,7 @@ def main():
     cbar = plt.colorbar(sc, ax=ax)
     cbar.set_label("w_inspect")
     plt.tight_layout()
-    fig_path = "sweep_tempon_pressure_weights.png"
+    fig_path = rf"sweep_tempon_pressure_weights_ins{PH.s}_gre_{PH.down_time}.png"
     plt.savefig(fig_path, dpi=150)
     print(f"Saved: {csv_path}")
     print(f"Saved: {fig_path}")

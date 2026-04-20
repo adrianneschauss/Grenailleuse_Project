@@ -123,7 +123,7 @@ def main():
         vmax=busy_max,
     )
 
-    out_path = "sweep_contours_tempon_variable.png"
+    out_path = "sweep_contours_tempon_variable_insp.png"
     fig.suptitle("Balayage probabilité d'arrêt vs pause longue (moyenne sur 10 runs)", fontsize=12)
     plt.savefig(out_path, dpi=150)
     print(f"Saved: {out_path}")

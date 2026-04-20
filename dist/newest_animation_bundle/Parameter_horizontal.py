@@ -65,7 +65,7 @@ inspect_min = 8
 inspect_max = 16#qqchose que tu peux modifier 
 min = 20
 max = 30
-s = 0.15
+s = 0.3
 #Load and Unload from Inspector 
 #Variable n° ? : Vitesse pour transférer une bouteille du déchargement machine jusqu’au chargement de la table d’inspection.
 #Variable n° ? : Temps de chargement de la table d’inspection (par exemple 8 secondes), together thats 2+8 
@@ -111,7 +111,7 @@ speed_ctrl_max_step_mult = 3
 speed_ctrl_min_step_mult = 0.88
 speed_ctrl_slow_band = 0.7
 speed_ctrl_slow_factor = 1.05
-speed_ctrl_streak_required = 5
+speed_ctrl_streak_required = 3
 speed_ctrl_window_s = 20
 
 # Tempon-fill preference for grenailleuse speed control.

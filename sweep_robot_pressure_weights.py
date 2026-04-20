@@ -171,7 +171,7 @@ def main():
     cbar = plt.colorbar(sc, ax=ax)
     cbar.set_label("w_inspect")
     plt.tight_layout()
-    fig_path = "sweep_robot_pressure_weights.png"
+    fig_path = rf"sweep_robot_pressure_weights_ins{PH.s}_gre_{PH.down_time}.png"
     plt.savefig(fig_path, dpi=150)
     print(f"Saved: {csv_path}")
     print(f"Saved: {fig_path}")
